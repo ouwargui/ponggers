@@ -7,6 +7,7 @@
       "dependencies": {
         "@config-plugins/react-native-webrtc": "^15.0.1",
         "@expo/ui": "~57.0.4",
+        "@ponggers/signaling-protocol": "workspace:*",
         "@shopify/react-native-skia": "^2.8.0",
         "expo": "~57.0.4",
         "expo-constants": "~57.0.3",
@@ -40,6 +41,21 @@
         "@types/react": "~19.2.2",
         "typescript": "~6.0.3",
       },
+    },
+    "apps/signaling": {
+      "name": "@ponggers/signaling",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ponggers/signaling-protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "typescript": "~6.0.3",
+      },
+    },
+    "packages/signaling-protocol": {
+      "name": "@ponggers/signaling-protocol",
+      "version": "0.0.0",
     },
   },
   "trustedDependencies": [
@@ -297,6 +313,10 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+
+    "@ponggers/signaling": ["@ponggers/signaling@workspace:apps/signaling"],
+
+    "@ponggers/signaling-protocol": ["@ponggers/signaling-protocol@workspace:packages/signaling-protocol"],
 
     "@radix-ui/primitive": ["@radix-ui/primitive@1.1.5", "", {}, "sha512-d86WIWFYNtGA0H/d8exstrTRTp7eWJYlYJbtNofxr/3ljupZYn6EFDG/Qgu/0Kc8v7yMUxySagqJsL1+PdYjWg=="],
 

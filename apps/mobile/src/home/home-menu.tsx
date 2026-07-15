@@ -140,8 +140,9 @@ export function HomeMenu() {
             accessibilityHint="Starts a match for two players sharing this device"
           />
           <MenuButton
+            href={'/online' as Href}
             label="ONLINE MATCH"
-            accessibilityHint="Online mode is coming soon"
+            accessibilityHint="Create or join an online peer-to-peer match"
           />
           <MenuButton
             label="SETTINGS"
