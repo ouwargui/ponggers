@@ -8,6 +8,16 @@ type ServeDirection = {
   vertical: 'top' | 'bottom';
 };
 
+export function createWaitingBall(): BallState {
+  'worklet';
+
+  return {
+    id: PRIMARY_BALL_ID,
+    position: { x: 0.5, y: 0.5 },
+    velocity: { x: 0, y: 0 },
+  };
+}
+
 export function createServe({
   horizontal = 'right',
   vertical = 'bottom',

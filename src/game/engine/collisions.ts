@@ -1,5 +1,6 @@
 import {
   BALL_IMPACT_REFERENCE_SPEED,
+  BALL_SPEED_UP_PER_PADDLE_HIT,
   PADDLE_MAX_BOUNCE_ANGLE,
   PADDLE_VELOCITY_INFLUENCE,
 } from '@/game/constants';
@@ -98,7 +99,8 @@ export function bounceBallFromPaddle(
   const bounceAngle = normalizedOffset * PADDLE_MAX_BOUNCE_ANGLE;
   const heightToWidthRatio = ballShape.radiusX / ballShape.radiusY;
   const velocityYInWidthUnits = ball.velocity.y * heightToWidthRatio;
-  const speed = Math.hypot(ball.velocity.x, velocityYInWidthUnits);
+  const incomingSpeed = Math.hypot(ball.velocity.x, velocityYInWidthUnits);
+  const speed = incomingSpeed * BALL_SPEED_UP_PER_PADDLE_HIT;
   const paddleInfluence = hit.paddle.velocityX * PADDLE_VELOCITY_INFLUENCE;
   const maximumVelocityX = speed * Math.sin(PADDLE_MAX_BOUNCE_ANGLE);
   const velocityX = Math.max(

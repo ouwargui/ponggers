@@ -1,47 +1,14 @@
-import {
-  Canvas,
-  Circle,
-  Fill,
-  Group,
-  Rect,
-  RoundedRect,
-  vec,
-} from '@shopify/react-native-skia';
+import { Canvas } from '@shopify/react-native-skia';
 import type { ReactNode } from 'react';
-import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
+import type { SharedValue } from 'react-native-reanimated';
 
-import { colors } from '@/game/constants';
-import type {
-  CanvasSize,
-  GameGeometry,
-  SceneBall,
-} from '@/game/rendering/types';
+import type { CanvasSize, GameGeometry } from '@/game/rendering/types';
+import { useGameTheme } from '@/game/themes/game-theme-provider';
 
 type GameSceneProps = GameGeometry & {
   canvasSize: SharedValue<CanvasSize>;
   children?: ReactNode;
 };
-
-function SquishyBall({ ball }: { ball: SceneBall }) {
-  const origin = useDerivedValue(() =>
-    vec(ball.centerX.value, ball.centerY.value),
-  );
-  const transform = useDerivedValue(() => [
-    { scaleX: ball.scaleX.value },
-    { scaleY: ball.scaleY.value },
-  ]);
-
-  return (
-    <Group origin={origin} transform={transform}>
-      <Circle
-        cx={ball.centerX}
-        cy={ball.centerY}
-        r={ball.radius}
-        color={ball.color}
-      />
-    </Group>
-  );
-}
 
 export function GameScene({
   canvasSize,
@@ -50,19 +17,22 @@ export function GameScene({
   balls,
   children,
 }: GameSceneProps) {
+  const theme = useGameTheme();
+  const { Arena, Ball, CenterLine, Paddle } = theme.renderers;
+
   return (
     <Canvas style={{ flex: 1 }} onSize={canvasSize}>
-      <Fill color={colors.arena} />
-      <Rect rect={centerLine} color={colors.centerLine} />
+      <Arena />
+      <CenterLine line={centerLine} />
 
       {children}
 
       {paddles.map((paddle) => (
-        <RoundedRect key={paddle.id} rect={paddle.rect} color={paddle.color} />
+        <Paddle key={paddle.id} paddle={paddle} />
       ))}
 
       {balls.map((ball) => (
-        <SquishyBall key={ball.id} ball={ball} />
+        <Ball key={ball.id} ball={ball} />
       ))}
     </Canvas>
   );

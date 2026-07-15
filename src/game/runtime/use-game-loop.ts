@@ -1,20 +1,28 @@
+import { useCallback, useState } from 'react';
 import {
   type SharedValue,
   useFrameCallback,
   useSharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import {
   BALL_RADIUS_RATIO,
   GAME_TICK_RATE,
   MAX_FRAME_TIME_SECONDS,
 } from '@/game/constants';
+import {
+  advanceMatchPhase,
+  createInitialMatchState,
+  recordGoal,
+} from '@/game/engine/match';
 import { decayPaddleVelocity } from '@/game/engine/paddle';
-import { createServe } from '@/game/engine/serve';
+import { createServe, createWaitingBall } from '@/game/engine/serve';
 import { stepBall } from '@/game/engine/simulation';
 import type {
   BallImpactEvent,
   BallState,
+  MatchState,
   PaddleState,
 } from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
@@ -32,7 +40,14 @@ export function useGameLoop({
   topPaddle,
   bottomPaddle,
 }: GameLoopOptions) {
-  const ball = useSharedValue<BallState>(createServe());
+  const [matchSnapshot, setMatchSnapshot] = useState<MatchState>(() =>
+    createInitialMatchState(),
+  );
+  const updateMatchSnapshot = useCallback((nextMatch: MatchState) => {
+    setMatchSnapshot(nextMatch);
+  }, []);
+  const ball = useSharedValue<BallState>(createWaitingBall());
+  const match = useSharedValue<MatchState>(matchSnapshot);
   const lastImpact = useSharedValue<BallImpactEvent | null>(null);
   const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
@@ -56,6 +71,7 @@ export function useGameLoop({
     accumulatedTime.value += frameTimeSeconds;
 
     let nextBall = ball.value;
+    let nextMatch = match.value;
     let nextTopPaddle = topPaddle.value;
     let nextBottomPaddle = bottomPaddle.value;
     let nextTick = simulationTick.value;
@@ -68,20 +84,36 @@ export function useGameLoop({
 
     while (accumulatedTime.value >= FIXED_STEP_SECONDS) {
       nextTick += 1;
+      const previousPhase = nextMatch.phase;
+      nextMatch = advanceMatchPhase(nextMatch, nextTick);
 
-      const stepResult = stepBall(
-        nextBall,
-        {
-          ballShape,
-          paddles: [nextTopPaddle, nextBottomPaddle],
-        },
-        FIXED_STEP_SECONDS,
-        nextTick,
-      );
-      nextBall = stepResult.ball;
+      if (
+        previousPhase.type === 'countdown' &&
+        nextMatch.phase.type === 'playing'
+      ) {
+        nextBall = createServe({ vertical: previousPhase.serveToward });
+      }
 
-      if (stepResult.impact) {
-        nextImpact = stepResult.impact;
+      if (nextMatch.phase.type === 'playing') {
+        const stepResult = stepBall(
+          nextBall,
+          {
+            ballShape,
+            paddles: [nextTopPaddle, nextBottomPaddle],
+          },
+          FIXED_STEP_SECONDS,
+          nextTick,
+        );
+        nextBall = stepResult.ball;
+
+        if (stepResult.impact) {
+          nextImpact = stepResult.impact;
+        }
+
+        if (stepResult.goal) {
+          nextMatch = recordGoal(nextMatch, stepResult.goal);
+          nextBall = createWaitingBall();
+        }
       }
 
       nextTopPaddle = decayPaddleVelocity(nextTopPaddle, FIXED_STEP_SECONDS);
@@ -97,6 +129,11 @@ export function useGameLoop({
       ball.value = nextBall;
       simulationTick.value = nextTick;
 
+      if (nextMatch !== match.value) {
+        match.value = nextMatch;
+        scheduleOnRN(updateMatchSnapshot, nextMatch);
+      }
+
       if (nextImpact) {
         lastImpact.value = nextImpact;
       }
@@ -111,5 +148,5 @@ export function useGameLoop({
     }
   });
 
-  return { ball, lastImpact };
+  return { ball, lastImpact, match: matchSnapshot };
 }

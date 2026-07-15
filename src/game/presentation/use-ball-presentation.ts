@@ -8,7 +8,9 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import type { BallImpactEvent } from '@/game/engine/types';
+import type { BallImpactEvent, BallState } from '@/game/engine/types';
+import type { BallTrailPoint } from '@/game/presentation/ball-trail';
+import { useBallTrail } from '@/game/presentation/use-ball-trail';
 
 const BASE_COMPRESSION = 0.9;
 const INTENSITY_COMPRESSION = 0.14;
@@ -23,6 +25,7 @@ const RECOVERY_SPRING = {
 export type BallPresentationState = {
   scaleX: SharedValue<number>;
   scaleY: SharedValue<number>;
+  trail: SharedValue<BallTrailPoint[]>;
 };
 
 export type BallSquash = {
@@ -45,10 +48,12 @@ export function getBallSquash(impact: BallImpactEvent): BallSquash {
 }
 
 export function useBallPresentation(
+  ball: SharedValue<BallState>,
   lastImpact: SharedValue<BallImpactEvent | null>,
 ): BallPresentationState {
   const scaleX = useSharedValue(1);
   const scaleY = useSharedValue(1);
+  const trail = useBallTrail(ball);
 
   useAnimatedReaction(
     () => lastImpact.value,
@@ -79,5 +84,5 @@ export function useBallPresentation(
     },
   );
 
-  return { scaleX, scaleY };
+  return { scaleX, scaleY, trail };
 }

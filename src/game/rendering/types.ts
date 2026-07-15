@@ -1,4 +1,9 @@
-import type { rect, SkRRect } from '@shopify/react-native-skia';
+import type {
+  rect,
+  SkPath,
+  SkPoint,
+  SkRRect,
+} from '@shopify/react-native-skia';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { EntityId, PlayerId } from '@/game/engine/types';
@@ -11,7 +16,6 @@ export type CanvasSize = {
 export type ScenePaddle = {
   id: PlayerId;
   rect: SharedValue<SkRRect>;
-  color: string;
 };
 
 export type SceneBall = {
@@ -21,7 +25,11 @@ export type SceneBall = {
   radius: SharedValue<number>;
   scaleX: SharedValue<number>;
   scaleY: SharedValue<number>;
-  color: string;
+  trail: {
+    path: SharedValue<SkPath>;
+    start: SharedValue<SkPoint>;
+    end: SharedValue<SkPoint>;
+  };
 };
 
 export type GameGeometry = {

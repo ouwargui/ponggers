@@ -5,10 +5,10 @@ import {
   getBallImpactIntensity,
   type PaddleHit,
 } from '@/game/engine/collisions';
-import { createServe } from '@/game/engine/serve';
 import type {
   BallImpactEvent,
   BallState,
+  GoalEvent,
   PaddleState,
   Vector2,
 } from '@/game/engine/types';
@@ -21,6 +21,7 @@ export type CollisionWorld = {
 export type BallStepResult = {
   ball: BallState;
   impact: BallImpactEvent | null;
+  goal: GoalEvent | null;
 };
 
 function createImpactEvent(
@@ -95,16 +96,28 @@ export function stepBall(
         { x: 0, y: earliestPaddleHit.paddle.id === 'top' ? 1 : -1 },
         tick,
       ),
+      goal: null,
     };
   }
 
   if (nextY < 0 || nextY > 1) {
+    const concededBy = nextY < 0 ? 'top' : 'bottom';
+
     return {
-      ball: createServe({
-        horizontal: velocityX >= 0 ? 'left' : 'right',
-        vertical: nextY > 1 ? 'top' : 'bottom',
-      }),
+      ball: {
+        ...ball,
+        position: nextPosition,
+        velocity: { ...ball.velocity, x: velocityX },
+      },
       impact,
+      goal: {
+        type: 'goal',
+        ballId: ball.id,
+        scorer: concededBy === 'top' ? 'bottom' : 'top',
+        concededBy,
+        boundary: concededBy,
+        tick,
+      },
     };
   }
 
@@ -115,5 +128,6 @@ export function stepBall(
       velocity: { ...ball.velocity, x: velocityX },
     },
     impact,
+    goal: null,
   };
 }

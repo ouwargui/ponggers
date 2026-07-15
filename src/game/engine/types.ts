@@ -33,7 +33,43 @@ export type BallImpactEvent = {
   tick: number;
 };
 
-export type GameEvent = BallImpactEvent;
+export type GoalEvent = {
+  type: 'goal';
+  ballId: EntityId;
+  scorer: PlayerId;
+  concededBy: PlayerId;
+  boundary: PlayerId;
+  tick: number;
+};
+
+export type GameEvent = BallImpactEvent | GoalEvent;
+
+export type MatchPhase =
+  | {
+      type: 'countdown';
+      endsAtTick: number;
+      serveToward: PlayerId;
+    }
+  | {
+      type: 'playing';
+    }
+  | {
+      type: 'point-scored';
+      scorer: PlayerId;
+      concededBy: PlayerId;
+      endsAtTick: number;
+    }
+  | {
+      type: 'match-ended';
+      winner: PlayerId;
+    };
+
+export type MatchState = {
+  phase: MatchPhase;
+  score: Record<PlayerId, number>;
+  winningScore: number;
+  rallyStartedAtTick: number | null;
+};
 
 export type SpecialEffect =
   | {
@@ -68,8 +104,7 @@ export type ActiveEffect = {
 
 export type GameState = {
   tick: number;
-  rallyStartedAtTick: number | null;
-  score: Record<PlayerId, number>;
+  match: MatchState;
   paddles: Record<PlayerId, PaddleState>;
   balls: BallState[];
   specials: SpecialState[];
