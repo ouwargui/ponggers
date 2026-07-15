@@ -1,6 +1,7 @@
 {
   "expo": {
-    "name": "ponggers",
+    "name": "Ponggers",
+    "description": "Ponggers is a local and multiplayer pong game that you can play with your friends.",
     "slug": "ponggers",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +10,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.ouwargui.ponggers"
+      "bundleIdentifier": "com.ouwargui.ponggers",
+      "requireFullScreen": true,
+      "infoPlist": {
+        "GCSupportsGameMode": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,10 +24,6 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
