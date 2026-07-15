@@ -10,6 +10,7 @@ import type {
   BallState,
   GoalEvent,
   PaddleState,
+  PlayerId,
   Vector2,
 } from '@/game/engine/types';
 
@@ -28,6 +29,7 @@ function createImpactEvent(
   ball: BallState,
   world: CollisionWorld,
   surface: BallImpactEvent['surface'],
+  playerId: PlayerId | null,
   normal: Vector2,
   tick: number,
 ): BallImpactEvent {
@@ -37,6 +39,7 @@ function createImpactEvent(
     type: 'ball-impact',
     ballId: ball.id,
     surface,
+    playerId,
     normal,
     intensity: getBallImpactIntensity(ball, world.ballShape),
     tick,
@@ -59,11 +62,18 @@ export function stepBall(
   if (nextX <= world.ballShape.radiusX) {
     nextX = world.ballShape.radiusX;
     velocityX = Math.abs(velocityX);
-    impact = createImpactEvent(ball, world, 'wall', { x: 1, y: 0 }, tick);
+    impact = createImpactEvent(ball, world, 'wall', null, { x: 1, y: 0 }, tick);
   } else if (nextX >= 1 - world.ballShape.radiusX) {
     nextX = 1 - world.ballShape.radiusX;
     velocityX = -Math.abs(velocityX);
-    impact = createImpactEvent(ball, world, 'wall', { x: -1, y: 0 }, tick);
+    impact = createImpactEvent(
+      ball,
+      world,
+      'wall',
+      null,
+      { x: -1, y: 0 },
+      tick,
+    );
   }
 
   const nextPosition = { x: nextX, y: nextY };
@@ -93,6 +103,7 @@ export function stepBall(
         ballAtImpact,
         world,
         'paddle',
+        earliestPaddleHit.paddle.id,
         { x: 0, y: earliestPaddleHit.paddle.id === 'top' ? 1 : -1 },
         tick,
       ),

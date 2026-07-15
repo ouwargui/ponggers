@@ -14,14 +14,40 @@ import { useDerivedValue } from 'react-native-reanimated';
 
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type {
+  ArenaRendererProps,
   BallRendererProps,
   CenterLineRendererProps,
   PaddleRendererProps,
   ScoreHudRendererProps,
 } from '@/game/themes/types';
 
-export function NeonArena() {
-  return <Fill color={neonPalette.arena} />;
+const CONTROL_ZONE_OPACITY = 0.12;
+
+export function NeonArena({ canvasSize }: ArenaRendererProps) {
+  const gradientStart = useDerivedValue(() =>
+    vec(canvasSize.value.width / 2, 0),
+  );
+  const gradientEnd = useDerivedValue(() =>
+    vec(canvasSize.value.width / 2, canvasSize.value.height),
+  );
+
+  return (
+    <Group>
+      <Fill color={neonPalette.arena} />
+      <Fill opacity={CONTROL_ZONE_OPACITY}>
+        <LinearGradient
+          start={gradientStart}
+          end={gradientEnd}
+          colors={[
+            neonPalette.players.top.glow,
+            neonPalette.arena,
+            neonPalette.players.bottom.glow,
+          ]}
+          positions={[0, 0.5, 1]}
+        />
+      </Fill>
+    </Group>
+  );
 }
 
 export function NeonCenterLine({ line }: CenterLineRendererProps) {
@@ -64,6 +90,50 @@ export function NeonBall({ ball }: BallRendererProps) {
   ]);
   const outerTrailWidth = useDerivedValue(() => ball.radius.value * 1.8);
   const innerTrailWidth = useDerivedValue(() => ball.radius.value * 0.85);
+  const glowColor = useDerivedValue(() => {
+    if (ball.lastHitBy.value === 'top') {
+      return neonPalette.players.top.glow;
+    }
+
+    if (ball.lastHitBy.value === 'bottom') {
+      return neonPalette.players.bottom.glow;
+    }
+
+    return neonPalette.ball.glow;
+  });
+  const coreColor = useDerivedValue(() => {
+    if (ball.lastHitBy.value === 'top') {
+      return neonPalette.players.top.core;
+    }
+
+    if (ball.lastHitBy.value === 'bottom') {
+      return neonPalette.players.bottom.core;
+    }
+
+    return neonPalette.ball.core;
+  });
+  const outerTrailColors = useDerivedValue(() => {
+    if (ball.lastHitBy.value === 'top') {
+      return ['rgba(255, 90, 31, 0)', neonPalette.players.top.glow];
+    }
+
+    if (ball.lastHitBy.value === 'bottom') {
+      return ['rgba(0, 229, 255, 0)', neonPalette.players.bottom.glow];
+    }
+
+    return ['rgba(125, 249, 255, 0)', neonPalette.ball.glow];
+  });
+  const innerTrailColors = useDerivedValue(() => {
+    if (ball.lastHitBy.value === 'top') {
+      return ['rgba(255, 241, 232, 0)', neonPalette.players.top.core];
+    }
+
+    if (ball.lastHitBy.value === 'bottom') {
+      return ['rgba(231, 253, 255, 0)', neonPalette.players.bottom.core];
+    }
+
+    return ['rgba(255, 255, 255, 0)', neonPalette.ball.core];
+  });
 
   return (
     <Group>
@@ -78,7 +148,7 @@ export function NeonBall({ ball }: BallRendererProps) {
         <LinearGradient
           start={ball.trail.start}
           end={ball.trail.end}
-          colors={['rgba(125, 249, 255, 0)', neonPalette.ball.glow]}
+          colors={outerTrailColors}
         />
         <BlurMask blur={14} style="normal" />
       </Path>
@@ -93,7 +163,7 @@ export function NeonBall({ ball }: BallRendererProps) {
         <LinearGradient
           start={ball.trail.start}
           end={ball.trail.end}
-          colors={['rgba(125, 249, 255, 0)', neonPalette.ball.core]}
+          colors={innerTrailColors}
         />
         <BlurMask blur={4} style="normal" />
       </Path>
@@ -103,7 +173,7 @@ export function NeonBall({ ball }: BallRendererProps) {
           cx={ball.centerX}
           cy={ball.centerY}
           r={ball.radius}
-          color={neonPalette.ball.glow}
+          color={glowColor}
           opacity={0.45}
         >
           <BlurMask blur={20} style="normal" />
@@ -112,7 +182,7 @@ export function NeonBall({ ball }: BallRendererProps) {
           cx={ball.centerX}
           cy={ball.centerY}
           r={ball.radius}
-          color={neonPalette.ball.glow}
+          color={glowColor}
           opacity={0.9}
         >
           <BlurMask blur={7} style="normal" />
@@ -121,7 +191,7 @@ export function NeonBall({ ball }: BallRendererProps) {
           cx={ball.centerX}
           cy={ball.centerY}
           r={ball.radius}
-          color={neonPalette.ball.core}
+          color={coreColor}
         />
       </Group>
     </Group>

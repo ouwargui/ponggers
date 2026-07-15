@@ -76,6 +76,7 @@ export function useGameLoop({
     let nextBottomPaddle = bottomPaddle.value;
     let nextTick = simulationTick.value;
     let nextImpact: BallImpactEvent | null = null;
+    let didResetBall = false;
     let didStep = false;
     const ballShape = {
       radiusX: BALL_RADIUS_RATIO,
@@ -113,6 +114,7 @@ export function useGameLoop({
         if (stepResult.goal) {
           nextMatch = recordGoal(nextMatch, stepResult.goal);
           nextBall = createWaitingBall();
+          didResetBall = true;
         }
       }
 
@@ -134,7 +136,9 @@ export function useGameLoop({
         scheduleOnRN(updateMatchSnapshot, nextMatch);
       }
 
-      if (nextImpact) {
+      if (didResetBall) {
+        lastImpact.value = null;
+      } else if (nextImpact) {
         lastImpact.value = nextImpact;
       }
 

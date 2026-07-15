@@ -1,7 +1,9 @@
 import type { ComponentType } from 'react';
+import type { SharedValue } from 'react-native-reanimated';
 
 import type { PlayerId } from '@/game/engine/types';
 import type {
+  CanvasSize,
   GameGeometry,
   SceneBall,
   ScenePaddle,
@@ -23,6 +25,10 @@ export type CenterLineRendererProps = {
   line: GameGeometry['centerLine'];
 };
 
+export type ArenaRendererProps = {
+  canvasSize: SharedValue<CanvasSize>;
+};
+
 export type PaddleRendererProps = {
   paddle: ScenePaddle;
 };
@@ -38,7 +44,7 @@ export type ScoreHudRendererProps = {
 };
 
 export type GameThemeRenderers = {
-  Arena: ComponentType;
+  Arena: ComponentType<ArenaRendererProps>;
   CenterLine: ComponentType<CenterLineRendererProps>;
   Paddle: ComponentType<PaddleRendererProps>;
   Ball: ComponentType<BallRendererProps>;

@@ -15,8 +15,8 @@ export function useBallTrail(
 ): SharedValue<BallTrailPoint[]> {
   const trail = useSharedValue<BallTrailPoint[]>([]);
 
-  useFrameCallback(({ timeSinceFirstFrame }) => {
-    trail.value = updateBallTrail(trail.value, ball.value, timeSinceFirstFrame);
+  useFrameCallback(({ timestamp }) => {
+    trail.value = updateBallTrail(trail.value, ball.value, timestamp);
   });
 
   return trail;

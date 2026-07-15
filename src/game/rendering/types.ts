@@ -25,6 +25,7 @@ export type SceneBall = {
   radius: SharedValue<number>;
   scaleX: SharedValue<number>;
   scaleY: SharedValue<number>;
+  lastHitBy: SharedValue<PlayerId | null>;
   trail: {
     path: SharedValue<SkPath>;
     start: SharedValue<SkPoint>;

@@ -1,4 +1,4 @@
-import { rect, rrect, usePathValue, vec } from '@shopify/react-native-skia';
+import { rect, rrect } from '@shopify/react-native-skia';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { BALL_RADIUS_RATIO } from '@/game/constants';
@@ -6,6 +6,7 @@ import { PRIMARY_BALL_ID } from '@/game/engine/serve';
 import type { BallState, PaddleState } from '@/game/engine/types';
 import type { BallPresentationState } from '@/game/presentation/use-ball-presentation';
 import type { CanvasSize, GameGeometry } from '@/game/rendering/types';
+import { useBallTrailGeometry } from '@/game/rendering/use-ball-trail-geometry';
 
 type GameGeometryOptions = {
   canvasSize: SharedValue<CanvasSize>;
@@ -66,41 +67,7 @@ export function useGameGeometry({
   const ballRadius = useDerivedValue(
     () => canvasSize.value.width * BALL_RADIUS_RATIO,
   );
-  const ballTrailPath = usePathValue((path) => {
-    'worklet';
-
-    const points = ballPresentation.trail.value;
-
-    if (points.length < 2) {
-      return;
-    }
-
-    const { width, height } = canvasSize.value;
-    const oldestPoint = points[points.length - 1];
-    path.moveTo(oldestPoint.x * width, oldestPoint.y * height);
-
-    for (let index = points.length - 2; index >= 0; index -= 1) {
-      const point = points[index];
-      path.lineTo(point.x * width, point.y * height);
-    }
-  });
-  const ballTrailStart = useDerivedValue(() => {
-    const points = ballPresentation.trail.value;
-    const point = points[points.length - 1] ?? ball.value.position;
-
-    return vec(
-      point.x * canvasSize.value.width,
-      point.y * canvasSize.value.height,
-    );
-  });
-  const ballTrailEnd = useDerivedValue(() => {
-    const point = ballPresentation.trail.value[0] ?? ball.value.position;
-
-    return vec(
-      point.x * canvasSize.value.width,
-      point.y * canvasSize.value.height,
-    );
-  });
+  const ballTrail = useBallTrailGeometry(canvasSize, ballPresentation.trail);
 
   return {
     centerLine,
@@ -116,11 +83,8 @@ export function useGameGeometry({
         radius: ballRadius,
         scaleX: ballPresentation.scaleX,
         scaleY: ballPresentation.scaleY,
-        trail: {
-          path: ballTrailPath,
-          start: ballTrailStart,
-          end: ballTrailEnd,
-        },
+        lastHitBy: ballPresentation.lastHitBy,
+        trail: ballTrail,
       },
     ],
   };

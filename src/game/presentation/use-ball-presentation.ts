@@ -8,7 +8,7 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import type { BallImpactEvent, BallState } from '@/game/engine/types';
+import type { BallImpactEvent, BallState, PlayerId } from '@/game/engine/types';
 import type { BallTrailPoint } from '@/game/presentation/ball-trail';
 import { useBallTrail } from '@/game/presentation/use-ball-trail';
 
@@ -25,6 +25,7 @@ const RECOVERY_SPRING = {
 export type BallPresentationState = {
   scaleX: SharedValue<number>;
   scaleY: SharedValue<number>;
+  lastHitBy: SharedValue<PlayerId | null>;
   trail: SharedValue<BallTrailPoint[]>;
 };
 
@@ -53,7 +54,20 @@ export function useBallPresentation(
 ): BallPresentationState {
   const scaleX = useSharedValue(1);
   const scaleY = useSharedValue(1);
+  const lastHitBy = useSharedValue<PlayerId | null>(null);
   const trail = useBallTrail(ball);
+
+  useAnimatedReaction(
+    () => {
+      const velocity = ball.value.velocity;
+      return velocity.x === 0 && velocity.y === 0;
+    },
+    (isWaiting) => {
+      if (isWaiting) {
+        lastHitBy.value = null;
+      }
+    },
+  );
 
   useAnimatedReaction(
     () => lastImpact.value,
@@ -65,6 +79,10 @@ export function useBallPresentation(
           impact.ballId === previousImpact.ballId)
       ) {
         return;
+      }
+
+      if (impact.surface === 'paddle') {
+        lastHitBy.value = impact.playerId;
       }
 
       const squash = getBallSquash(impact);
@@ -84,5 +102,5 @@ export function useBallPresentation(
     },
   );
 
-  return { scaleX, scaleY, trail };
+  return { scaleX, scaleY, lastHitBy, trail };
 }

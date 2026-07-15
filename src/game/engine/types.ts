@@ -28,6 +28,7 @@ export type BallImpactEvent = {
   type: 'ball-impact';
   ballId: EntityId;
   surface: 'paddle' | 'wall';
+  playerId: PlayerId | null;
   normal: Vector2;
   intensity: number;
   tick: number;

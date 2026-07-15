@@ -22,7 +22,7 @@ export function GameScene({
 
   return (
     <Canvas style={{ flex: 1 }} onSize={canvasSize}>
-      <Arena />
+      <Arena canvasSize={canvasSize} />
       <CenterLine line={centerLine} />
 
       {children}
