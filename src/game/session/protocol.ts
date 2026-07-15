@@ -1,6 +1,16 @@
 import type { PaddleInput } from '@/game/engine/types';
 
-export type SessionMessage = PaddleInput;
+export type PingMessage = {
+  type: 'ping';
+  id: number;
+};
+
+export type PongMessage = {
+  type: 'pong';
+  id: number;
+};
+
+export type SessionMessage = PaddleInput | PingMessage | PongMessage;
 
 export function cloneSessionMessage(message: SessionMessage): SessionMessage {
   return { ...message };
@@ -25,25 +35,34 @@ export function parseSessionMessage(value: unknown): SessionMessage | null {
 
   const message = value as Record<string, unknown>;
 
-  if (
-    message.type !== 'paddle-input' ||
-    (message.playerId !== 'top' && message.playerId !== 'bottom') ||
-    !isNonNegativeInteger(message.sequence) ||
-    !isFiniteNumber(message.centerX) ||
-    !isFiniteNumber(message.velocityX) ||
-    !isNonNegativeInteger(message.clientTick)
-  ) {
-    return null;
+  if (message.type === 'ping' || message.type === 'pong') {
+    return isNonNegativeInteger(message.id)
+      ? { type: message.type, id: message.id }
+      : null;
   }
 
-  return {
-    type: message.type,
-    playerId: message.playerId,
-    sequence: message.sequence,
-    centerX: message.centerX,
-    velocityX: message.velocityX,
-    clientTick: message.clientTick,
-  };
+  if (message.type === 'paddle-input') {
+    if (
+      (message.playerId !== 'top' && message.playerId !== 'bottom') ||
+      !isNonNegativeInteger(message.sequence) ||
+      !isFiniteNumber(message.centerX) ||
+      !isFiniteNumber(message.velocityX) ||
+      !isNonNegativeInteger(message.clientTick)
+    ) {
+      return null;
+    }
+
+    return {
+      type: message.type,
+      playerId: message.playerId,
+      sequence: message.sequence,
+      centerX: message.centerX,
+      velocityX: message.velocityX,
+      clientTick: message.clientTick,
+    };
+  }
+
+  return null;
 }
 
 function isFiniteNumber(value: unknown): value is number {

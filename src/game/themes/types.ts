@@ -52,12 +52,20 @@ export type MatchOverlayRendererProps = {
   onRematch: () => void;
 };
 
+export type LatencyIndicatorRendererProps = {
+  latencyMs: number;
+  player: PlayerId;
+  topInset: number;
+  bottomInset: number;
+};
+
 export type GameThemeRenderers = {
   Arena: ComponentType<ArenaRendererProps>;
   CenterLine: ComponentType<CenterLineRendererProps>;
   Paddle: ComponentType<PaddleRendererProps>;
   Ball: ComponentType<BallRendererProps>;
   MatchOverlay: ComponentType<MatchOverlayRendererProps>;
+  LatencyIndicator: ComponentType<LatencyIndicatorRendererProps>;
 };
 
 export type GameTheme = {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { SessionMessage } from '@/game/session/protocol';
+import type { PaddleInput } from '@/game/engine/types';
 import {
   createSimulatedTransportPair,
   type TransportScheduler,
@@ -61,7 +61,7 @@ class ManualScheduler implements TransportScheduler {
   }
 }
 
-function createInput(sequence: number): SessionMessage {
+function createInput(sequence: number): PaddleInput {
   return {
     type: 'paddle-input',
     playerId: 'bottom',
@@ -84,10 +84,14 @@ describe('simulated session transport', () => {
       latencyMs: 100,
       scheduler,
     });
-    const received: SessionMessage[] = [];
+    const received: PaddleInput[] = [];
     const input = createInput(1);
 
-    peerB.subscribe((message) => received.push(message));
+    peerB.subscribe((message) => {
+      if (message.type === 'paddle-input') {
+        received.push(message);
+      }
+    });
     expect(peerA.send(input)).toBe(true);
     input.centerX = 0.99;
 
@@ -109,7 +113,11 @@ describe('simulated session transport', () => {
     });
     const receivedSequences: number[] = [];
 
-    peerB.subscribe((message) => receivedSequences.push(message.sequence));
+    peerB.subscribe((message) => {
+      if (message.type === 'paddle-input') {
+        receivedSequences.push(message.sequence);
+      }
+    });
     peerA.send(createInput(1));
     peerA.send(createInput(2));
 
@@ -126,7 +134,11 @@ describe('simulated session transport', () => {
     });
     const receivedSequences: number[] = [];
 
-    peerB.subscribe((message) => receivedSequences.push(message.sequence));
+    peerB.subscribe((message) => {
+      if (message.type === 'paddle-input') {
+        receivedSequences.push(message.sequence);
+      }
+    });
     peerA.send(createInput(1));
     peerA.send(createInput(2));
     scheduler.advanceBy(0);
@@ -140,10 +152,14 @@ describe('simulated session transport', () => {
       latencyMs: 100,
       scheduler,
     });
-    const received: SessionMessage[] = [];
+    const received: PaddleInput[] = [];
     const states: string[] = [];
 
-    peerB.subscribe((message) => received.push(message));
+    peerB.subscribe((message) => {
+      if (message.type === 'paddle-input') {
+        received.push(message);
+      }
+    });
     peerA.subscribeState((state) => states.push(`a:${state}`));
     peerB.subscribeState((state) => states.push(`b:${state}`));
     peerA.send(createInput(1));

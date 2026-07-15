@@ -20,6 +20,21 @@ describe('session protocol', () => {
     expect(decodeSessionMessage(encodeSessionMessage(input))).toEqual(input);
   });
 
+  test('round-trips ping and pong control messages', () => {
+    expect(
+      decodeSessionMessage(encodeSessionMessage({ type: 'ping', id: 4 })),
+    ).toEqual({
+      type: 'ping',
+      id: 4,
+    });
+    expect(
+      decodeSessionMessage(encodeSessionMessage({ type: 'pong', id: 4 })),
+    ).toEqual({
+      type: 'pong',
+      id: 4,
+    });
+  });
+
   test('rejects malformed or non-finite remote input', () => {
     expect(decodeSessionMessage('{bad json')).toBeNull();
     expect(
@@ -42,5 +57,7 @@ describe('session protocol', () => {
         clientTick: 20,
       }),
     ).toBeNull();
+    expect(parseSessionMessage({ type: 'ping', id: -1 })).toBeNull();
+    expect(parseSessionMessage({ type: 'pong', id: 1.5 })).toBeNull();
   });
 });
