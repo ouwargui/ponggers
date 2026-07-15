@@ -76,8 +76,9 @@ class SimulatedTransportEndpoint implements SessionTransport {
     }
 
     if (
-      this.#packetLoss >= 1 ||
-      (this.#packetLoss > 0 && this.#sampleRandom() < this.#packetLoss)
+      message.type === 'paddle-input' &&
+      (this.#packetLoss >= 1 ||
+        (this.#packetLoss > 0 && this.#sampleRandom() < this.#packetLoss))
     ) {
       return true;
     }

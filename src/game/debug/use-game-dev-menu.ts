@@ -4,15 +4,22 @@ import { useEffect } from 'react';
 import type { OnlineSessionRole } from '@/game/session/definition';
 
 type UseGameDevMenuOptions = {
-  networkLabRole: OnlineSessionRole | null;
+  activeLab: GameDevLab | null;
   onOpenNetworkLab: (role: OnlineSessionRole) => void;
-  onExitNetworkLab: () => void;
+  onOpenRtcLab: (role: OnlineSessionRole) => void;
+  onExitLab: () => void;
+};
+
+export type GameDevLab = {
+  type: 'network' | 'rtc';
+  role: OnlineSessionRole;
 };
 
 export function useGameDevMenu({
-  networkLabRole,
+  activeLab,
   onOpenNetworkLab,
-  onExitNetworkLab,
+  onOpenRtcLab,
+  onExitLab,
 }: UseGameDevMenuOptions) {
   useEffect(() => {
     if (!__DEV__) {
@@ -20,11 +27,11 @@ export function useGameDevMenu({
     }
 
     void DevClient.registerDevMenuItems(
-      networkLabRole
+      activeLab
         ? [
             {
-              name: 'Exit Network Lab',
-              callback: onExitNetworkLab,
+              name: `Exit ${activeLab.type === 'rtc' ? 'RTC' : 'Network'} Lab`,
+              callback: onExitLab,
               shouldCollapse: true,
             },
           ]
@@ -39,7 +46,17 @@ export function useGameDevMenu({
               callback: () => onOpenNetworkLab('guest'),
               shouldCollapse: true,
             },
+            {
+              name: 'Open RTC Lab as Host',
+              callback: () => onOpenRtcLab('host'),
+              shouldCollapse: true,
+            },
+            {
+              name: 'Open RTC Lab as Guest',
+              callback: () => onOpenRtcLab('guest'),
+              shouldCollapse: true,
+            },
           ],
     );
-  }, [networkLabRole, onExitNetworkLab, onOpenNetworkLab]);
+  }, [activeLab, onExitLab, onOpenNetworkLab, onOpenRtcLab]);
 }

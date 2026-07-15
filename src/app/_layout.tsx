@@ -5,25 +5,32 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { NetworkLab } from '@/game/debug/network-lab';
-import { useGameDevMenu } from '@/game/debug/use-game-dev-menu';
+import { RtcLab } from '@/game/debug/rtc-lab';
+import {
+  type GameDevLab,
+  useGameDevMenu,
+} from '@/game/debug/use-game-dev-menu';
 import type { OnlineSessionRole } from '@/game/session/definition';
 import { GameThemeProvider } from '@/game/themes/game-theme-provider';
 import { defaultGameTheme } from '@/game/themes/theme-registry';
 
 export default function RootLayout() {
-  const [networkLabRole, setNetworkLabRole] =
-    useState<OnlineSessionRole | null>(null);
+  const [activeLab, setActiveLab] = useState<GameDevLab | null>(null);
   const openNetworkLab = useCallback((role: OnlineSessionRole) => {
-    setNetworkLabRole(role);
+    setActiveLab({ type: 'network', role });
   }, []);
-  const exitNetworkLab = useCallback(() => {
-    setNetworkLabRole(null);
+  const openRtcLab = useCallback((role: OnlineSessionRole) => {
+    setActiveLab({ type: 'rtc', role });
+  }, []);
+  const exitLab = useCallback(() => {
+    setActiveLab(null);
   }, []);
 
   useGameDevMenu({
-    networkLabRole,
+    activeLab,
     onOpenNetworkLab: openNetworkLab,
-    onExitNetworkLab: exitNetworkLab,
+    onOpenRtcLab: openRtcLab,
+    onExitLab: exitLab,
   });
 
   return (
@@ -42,9 +49,13 @@ export default function RootLayout() {
           <Stack.Screen name="game/local" />
         </Stack>
 
-        {__DEV__ && networkLabRole ? (
-          <View style={styles.networkLab}>
-            <NetworkLab role={networkLabRole} onExit={exitNetworkLab} />
+        {__DEV__ && activeLab ? (
+          <View style={styles.debugLab}>
+            {activeLab.type === 'network' ? (
+              <NetworkLab role={activeLab.role} onExit={exitLab} />
+            ) : (
+              <RtcLab role={activeLab.role} onExit={exitLab} />
+            )}
           </View>
         ) : null}
       </GameThemeProvider>
@@ -56,7 +67,7 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: defaultGameTheme.palette.arena,
   },
-  networkLab: {
+  debugLab: {
     position: 'absolute',
     top: 0,
     right: 0,

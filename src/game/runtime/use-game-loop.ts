@@ -8,7 +8,6 @@ import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import {
   BALL_RADIUS_RATIO,
-  GAME_SNAPSHOT_SEND_INTERVAL_TICKS,
   GAME_TICK_RATE,
   MAX_FRAME_TIME_SECONDS,
 } from '@/game/constants';
@@ -24,17 +23,22 @@ import { stepBall } from '@/game/engine/simulation';
 import type {
   BallImpactEvent,
   BallState,
-  MatchPhase,
   MatchState,
   PaddleState,
 } from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
+import type { OnlineSessionRole } from '@/game/session/definition';
 import {
-  applyReplicaPaddle,
-  createGameSnapshotMessage,
-  type GameSnapshotMessage,
-  interpolateReplicaBall,
-} from '@/game/session/snapshot';
+  advanceRallyAuthority,
+  createInitialRallyAuthority,
+  type RallyAuthorityState,
+  type RallyEventMessage,
+  transformRallyEventForPeer,
+} from '@/game/session/rally';
+import {
+  type MatchStateMessage,
+  transformMatchStateForPeer,
+} from '@/game/session/recovery';
 
 const FIXED_STEP_SECONDS = 1 / GAME_TICK_RATE;
 
@@ -42,8 +46,8 @@ type GameLoopOptions = {
   canvasSize: SharedValue<CanvasSize>;
   topPaddle: SharedValue<PaddleState>;
   bottomPaddle: SharedValue<PaddleState>;
-  isAuthoritative?: boolean;
-  onAuthoritativeSnapshot?: (snapshot: GameSnapshotMessage) => void;
+  onlineRole?: OnlineSessionRole | null;
+  onRallyEvent?: (event: RallyEventMessage) => void;
   paused?: SharedValue<boolean>;
 };
 
@@ -52,73 +56,97 @@ type GameLoopSnapshot = {
   countdown: number | null;
 };
 
-function areMatchSnapshotsEqual(left: MatchState, right: MatchState) {
-  return (
-    left.score.top === right.score.top &&
-    left.score.bottom === right.score.bottom &&
-    left.winningScore === right.winningScore &&
-    left.rallyStartedAtTick === right.rallyStartedAtTick &&
-    areMatchPhasesEqual(left.phase, right.phase)
-  );
-}
-
-function areMatchPhasesEqual(left: MatchPhase, right: MatchPhase) {
-  if (left.type !== right.type) {
-    return false;
-  }
-
-  switch (left.type) {
-    case 'playing':
-      return true;
-    case 'countdown':
-      return (
-        right.type === 'countdown' &&
-        left.startedAtTick === right.startedAtTick &&
-        left.endsAtTick === right.endsAtTick &&
-        left.countFrom === right.countFrom &&
-        left.stepDurationTicks === right.stepDurationTicks &&
-        left.serveToward === right.serveToward
-      );
-    case 'point-scored':
-      return (
-        right.type === 'point-scored' &&
-        left.scorer === right.scorer &&
-        left.concededBy === right.concededBy &&
-        left.endsAtTick === right.endsAtTick
-      );
-    case 'match-ended':
-      return right.type === 'match-ended' && left.winner === right.winner;
-  }
-}
-
-function queueReplicaSnapshot(
-  target: SharedValue<GameSnapshotMessage | null>,
+function applyRemoteRallyEventOnUI(
+  authority: SharedValue<RallyAuthorityState>,
+  ball: SharedValue<BallState>,
   match: SharedValue<MatchState>,
   countdown: SharedValue<number | null>,
   lastImpact: SharedValue<BallImpactEvent | null>,
   simulationTick: SharedValue<number>,
-  snapshot: GameSnapshotMessage,
-  nextCountdown: number | null,
+  event: RallyEventMessage,
+  updateSnapshot: (nextMatch: MatchState, countdown: number | null) => void,
 ) {
   'worklet';
 
-  target.value = snapshot;
-  match.value = snapshot.match;
+  const nextAuthority = advanceRallyAuthority(authority.value, event);
+
+  if (!nextAuthority) {
+    return;
+  }
+
+  authority.value = nextAuthority;
+  let nextMatch = match.value;
+
+  if (event.type === 'rally-started') {
+    ball.value = event.ball;
+    lastImpact.value = null;
+    nextMatch = {
+      ...nextMatch,
+      phase: { type: 'playing' },
+      rallyStartedAtTick: simulationTick.value,
+    };
+  } else if (event.type === 'shot-returned') {
+    ball.value = event.ball;
+    lastImpact.value = event.impact;
+  } else {
+    nextMatch = recordGoal(nextMatch, {
+      type: 'goal',
+      ballId: ball.value.id,
+      scorer: 'bottom',
+      concededBy: 'top',
+      boundary: 'top',
+      tick: simulationTick.value,
+    });
+    ball.value = createWaitingBall();
+    lastImpact.value = null;
+  }
+
+  const nextCountdown = getCountdownValue(nextMatch, simulationTick.value);
+  match.value = nextMatch;
   countdown.value = nextCountdown;
-  lastImpact.value = snapshot.lastImpact;
-  simulationTick.value = snapshot.tick;
+  scheduleOnRN(updateSnapshot, nextMatch, nextCountdown);
+}
+
+function applyRemoteMatchStateOnUI(
+  authority: SharedValue<RallyAuthorityState>,
+  accumulatedTime: SharedValue<number>,
+  ball: SharedValue<BallState>,
+  topPaddle: SharedValue<PaddleState>,
+  match: SharedValue<MatchState>,
+  countdown: SharedValue<number | null>,
+  lastImpact: SharedValue<BallImpactEvent | null>,
+  simulationTick: SharedValue<number>,
+  state: MatchStateMessage,
+  updateSnapshot: (nextMatch: MatchState, countdown: number | null) => void,
+) {
+  'worklet';
+
+  const nextCountdown = getCountdownValue(state.match, state.tick);
+
+  accumulatedTime.value = 0;
+  authority.value = state.authority;
+  ball.value = state.ball;
+  topPaddle.value = state.paddle;
+  match.value = state.match;
+  countdown.value = nextCountdown;
+  lastImpact.value = state.lastImpact;
+  simulationTick.value = state.tick;
+  scheduleOnRN(updateSnapshot, state.match, nextCountdown);
 }
 
 export function useGameLoop({
   canvasSize,
   topPaddle,
   bottomPaddle,
-  isAuthoritative = true,
-  onAuthoritativeSnapshot,
+  onlineRole = null,
+  onRallyEvent,
   paused,
 }: GameLoopOptions) {
   const [snapshot, setSnapshot] = useState<GameLoopSnapshot>(() => {
-    const match = createInitialMatchState();
+    const match = createInitialMatchState(
+      0,
+      onlineRole === 'guest' ? 'top' : 'bottom',
+    );
     return { match, countdown: getCountdownValue(match, 0) };
   });
   const updateSnapshot = useCallback(
@@ -133,56 +161,118 @@ export function useGameLoop({
   const lastImpact = useSharedValue<BallImpactEvent | null>(null);
   const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
-  const replicaTarget = useSharedValue<GameSnapshotMessage | null>(null);
+  const rallyAuthority = useSharedValue<RallyAuthorityState>(
+    createInitialRallyAuthority(),
+  );
 
-  const applyAuthoritativeSnapshot = useCallback(
-    (authoritativeSnapshot: GameSnapshotMessage) => {
-      const nextCountdown = getCountdownValue(
-        authoritativeSnapshot.match,
-        authoritativeSnapshot.tick,
-      );
+  const applyRallyEvent = useCallback(
+    (event: RallyEventMessage) => {
+      if (!onlineRole || event.playerRole === onlineRole) {
+        return;
+      }
 
-      setSnapshot((currentSnapshot) =>
-        currentSnapshot.countdown === nextCountdown &&
-        areMatchSnapshotsEqual(
-          currentSnapshot.match,
-          authoritativeSnapshot.match,
-        )
-          ? currentSnapshot
-          : {
-              match: authoritativeSnapshot.match,
-              countdown: nextCountdown,
-            },
-      );
       scheduleOnUI(
-        queueReplicaSnapshot,
-        replicaTarget,
+        applyRemoteRallyEventOnUI,
+        rallyAuthority,
+        ball,
         match,
         countdown,
         lastImpact,
         simulationTick,
-        authoritativeSnapshot,
-        nextCountdown,
+        transformRallyEventForPeer(event),
+        updateSnapshot,
       );
     },
-    [countdown, lastImpact, match, replicaTarget, simulationTick],
+    [
+      ball,
+      countdown,
+      lastImpact,
+      match,
+      onlineRole,
+      rallyAuthority,
+      simulationTick,
+      updateSnapshot,
+    ],
+  );
+
+  const createMatchState = useCallback(
+    (requestId: number): MatchStateMessage | null => {
+      if (!onlineRole) {
+        return null;
+      }
+
+      return {
+        type: 'match-state',
+        requestId,
+        playerRole: onlineRole,
+        tick: simulationTick.value,
+        authority: rallyAuthority.value,
+        ball: ball.value,
+        paddle: bottomPaddle.value,
+        match: match.value,
+        lastImpact: lastImpact.value,
+      };
+    },
+    [
+      ball,
+      bottomPaddle,
+      lastImpact,
+      match,
+      onlineRole,
+      rallyAuthority,
+      simulationTick,
+    ],
+  );
+
+  const applyMatchState = useCallback(
+    (state: MatchStateMessage) => {
+      if (!onlineRole || state.playerRole === onlineRole) {
+        return;
+      }
+
+      scheduleOnUI(
+        applyRemoteMatchStateOnUI,
+        rallyAuthority,
+        accumulatedTime,
+        ball,
+        topPaddle,
+        match,
+        countdown,
+        lastImpact,
+        simulationTick,
+        transformMatchStateForPeer(state),
+        updateSnapshot,
+      );
+    },
+    [
+      accumulatedTime,
+      ball,
+      countdown,
+      lastImpact,
+      match,
+      onlineRole,
+      rallyAuthority,
+      simulationTick,
+      topPaddle,
+      updateSnapshot,
+    ],
   );
 
   const restartMatch = useCallback(() => {
-    if (!isAuthoritative) {
-      return;
-    }
-
     scheduleOnUI(() => {
       'worklet';
 
-      const nextMatch = createInitialMatchState(simulationTick.value);
+      const nextMatch = createInitialMatchState(
+        simulationTick.value,
+        onlineRole === 'guest' ? 'top' : 'bottom',
+      );
       const nextCountdown = getCountdownValue(nextMatch, simulationTick.value);
 
       accumulatedTime.value = 0;
       ball.value = createWaitingBall();
       countdown.value = nextCountdown;
       lastImpact.value = null;
+      rallyAuthority.value = createInitialRallyAuthority();
       topPaddle.value = resetPaddleForMatch(topPaddle.value);
       bottomPaddle.value = resetPaddleForMatch(bottomPaddle.value);
       match.value = nextMatch;
@@ -193,9 +283,10 @@ export function useGameLoop({
     ball,
     bottomPaddle,
     countdown,
-    isAuthoritative,
     lastImpact,
     match,
+    onlineRole,
+    rallyAuthority,
     simulationTick,
     topPaddle,
     updateSnapshot,
@@ -221,29 +312,10 @@ export function useGameLoop({
       timeSincePreviousFrame / 1000,
       MAX_FRAME_TIME_SECONDS,
     );
-
-    if (!isAuthoritative) {
-      const target = replicaTarget.value;
-
-      if (!target) {
-        return;
-      }
-
-      ball.value =
-        target.match.phase.type === 'playing'
-          ? interpolateReplicaBall(ball.value, target.ball, frameTimeSeconds)
-          : target.ball;
-      topPaddle.value = applyReplicaPaddle(
-        topPaddle.value,
-        target.paddles.top,
-        frameTimeSeconds,
-      );
-      bottomPaddle.value = {
-        ...bottomPaddle.value,
-        width: target.paddles.bottom.width,
-      };
-      return;
-    }
+    const ballShape = {
+      radiusX: BALL_RADIUS_RATIO,
+      radiusY: (BALL_RADIUS_RATIO * width) / height,
+    };
 
     accumulatedTime.value += frameTimeSeconds;
 
@@ -253,13 +325,10 @@ export function useGameLoop({
     let nextBottomPaddle = bottomPaddle.value;
     let nextTick = simulationTick.value;
     let nextImpact: BallImpactEvent | null = null;
+    let nextRallyAuthority = rallyAuthority.value;
+    let nextRallyEvent: RallyEventMessage | null = null;
     let didResetBall = false;
     let didStep = false;
-    const ballShape = {
-      radiusX: BALL_RADIUS_RATIO,
-      radiusY: (BALL_RADIUS_RATIO * width) / height,
-    };
-
     while (accumulatedTime.value >= FIXED_STEP_SECONDS) {
       nextTick += 1;
       const previousPhase = nextMatch.phase;
@@ -269,10 +338,37 @@ export function useGameLoop({
         previousPhase.type === 'countdown' &&
         nextMatch.phase.type === 'playing'
       ) {
-        nextBall = createServe({ vertical: previousPhase.serveToward });
+        if (!onlineRole) {
+          nextBall = createServe({ vertical: previousPhase.serveToward });
+        } else if (
+          nextRallyAuthority.status === 'waiting-for-serve' &&
+          nextRallyAuthority.nextServerRole === onlineRole
+        ) {
+          const serve = createServe({ vertical: 'bottom' });
+          const event: RallyEventMessage = {
+            type: 'rally-started',
+            rallyId: nextRallyAuthority.rallyId + 1,
+            shot: 0,
+            playerRole: onlineRole,
+            ball: serve,
+          };
+          const advancedAuthority = advanceRallyAuthority(
+            nextRallyAuthority,
+            event,
+          );
+
+          if (advancedAuthority) {
+            nextRallyAuthority = advancedAuthority;
+            nextBall = serve;
+            nextRallyEvent = event;
+          }
+        }
       }
 
-      if (nextMatch.phase.type === 'playing') {
+      if (
+        nextMatch.phase.type === 'playing' &&
+        (!onlineRole || nextRallyAuthority.status === 'playing')
+      ) {
         const stepResult = stepBall(
           nextBall,
           {
@@ -284,14 +380,72 @@ export function useGameLoop({
         );
         nextBall = stepResult.ball;
 
-        if (stepResult.impact) {
+        if (
+          stepResult.impact &&
+          (!onlineRole ||
+            stepResult.impact.surface === 'wall' ||
+            stepResult.impact.playerId === 'bottom')
+        ) {
           nextImpact = stepResult.impact;
         }
 
         if (stepResult.goal) {
-          nextMatch = recordGoal(nextMatch, stepResult.goal);
-          nextBall = createWaitingBall();
-          didResetBall = true;
+          const isLocallyConcededOnlinePoint =
+            onlineRole !== null &&
+            stepResult.goal.concededBy === 'bottom' &&
+            nextRallyAuthority.defenderRole === onlineRole;
+
+          if (!onlineRole || isLocallyConcededOnlinePoint) {
+            if (isLocallyConcededOnlinePoint) {
+              const event: RallyEventMessage = {
+                type: 'point-conceded',
+                rallyId: nextRallyAuthority.rallyId,
+                shot: nextRallyAuthority.shot,
+                playerRole: onlineRole,
+              };
+              const advancedAuthority = advanceRallyAuthority(
+                nextRallyAuthority,
+                event,
+              );
+
+              if (advancedAuthority) {
+                nextRallyAuthority = advancedAuthority;
+                nextRallyEvent = event;
+              }
+            }
+
+            nextMatch = recordGoal(nextMatch, stepResult.goal);
+            nextBall = createWaitingBall();
+            didResetBall = true;
+          } else {
+            nextBall = {
+              ...stepResult.ball,
+              velocity: { x: 0, y: 0 },
+            };
+          }
+        } else if (
+          onlineRole &&
+          stepResult.impact?.surface === 'paddle' &&
+          stepResult.impact.playerId === 'bottom' &&
+          nextRallyAuthority.defenderRole === onlineRole
+        ) {
+          const event: RallyEventMessage = {
+            type: 'shot-returned',
+            rallyId: nextRallyAuthority.rallyId,
+            shot: nextRallyAuthority.shot + 1,
+            playerRole: onlineRole,
+            ball: stepResult.ball,
+            impact: stepResult.impact,
+          };
+          const advancedAuthority = advanceRallyAuthority(
+            nextRallyAuthority,
+            event,
+          );
+
+          if (advancedAuthority) {
+            nextRallyAuthority = advancedAuthority;
+            nextRallyEvent = event;
+          }
         }
       }
 
@@ -307,6 +461,10 @@ export function useGameLoop({
     if (didStep) {
       ball.value = nextBall;
       simulationTick.value = nextTick;
+
+      if (nextRallyAuthority !== rallyAuthority.value) {
+        rallyAuthority.value = nextRallyAuthority;
+      }
 
       const didMatchChange = nextMatch !== match.value;
       const nextCountdown = getCountdownValue(nextMatch, nextTick);
@@ -338,29 +496,18 @@ export function useGameLoop({
         bottomPaddle.value = nextBottomPaddle;
       }
 
-      if (
-        onAuthoritativeSnapshot &&
-        nextTick % GAME_SNAPSHOT_SEND_INTERVAL_TICKS === 0
-      ) {
-        scheduleOnRN(
-          onAuthoritativeSnapshot,
-          createGameSnapshotMessage(
-            nextTick,
-            nextBall,
-            nextTopPaddle,
-            nextBottomPaddle,
-            nextMatch,
-            lastImpact.value,
-          ),
-        );
+      if (onRallyEvent && nextRallyEvent) {
+        scheduleOnRN(onRallyEvent, nextRallyEvent);
       }
     }
   });
 
   return {
-    applyAuthoritativeSnapshot,
+    applyMatchState,
+    applyRallyEvent,
     ball,
     countdown: snapshot.countdown,
+    createMatchState,
     lastImpact,
     match: snapshot.match,
     restartMatch,

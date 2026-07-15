@@ -15,13 +15,10 @@ export function useOnlineRematch({
   transport,
   restartMatch,
 }: UseOnlineRematchOptions) {
-  const isHost =
-    session.mode === 'online-multiplayer' && session.onlineRole === 'host';
-  const isGuest =
-    session.mode === 'online-multiplayer' && session.onlineRole === 'guest';
+  const isOnline = session.mode === 'online-multiplayer';
 
   useEffect(() => {
-    if (!isHost || !transport) {
+    if (!isOnline || !transport) {
       return;
     }
 
@@ -32,14 +29,13 @@ export function useOnlineRematch({
         restartMatch();
       }
     });
-  }, [isHost, restartMatch, transport]);
+  }, [isOnline, restartMatch, transport]);
 
   return useCallback(() => {
-    if (isGuest && transport) {
+    if (isOnline && transport) {
       transport.send({ type: 'rematch-request', id: Date.now() });
-      return;
     }
 
     restartMatch();
-  }, [isGuest, restartMatch, transport]);
+  }, [isOnline, restartMatch, transport]);
 }

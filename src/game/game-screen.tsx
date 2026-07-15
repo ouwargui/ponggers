@@ -17,7 +17,9 @@ import {
   LOCAL_MULTIPLAYER_SESSION,
 } from '@/game/session/definition';
 import type { SessionTransport } from '@/game/session/transport';
-import { useAuthoritativeSnapshots } from '@/game/session/use-authoritative-snapshots';
+import { useOnlineMatchRecovery } from '@/game/session/use-online-match-recovery';
+import { useOnlinePaddleLayout } from '@/game/session/use-online-paddle-layout';
+import { useOnlineRallyEvents } from '@/game/session/use-online-rally-events';
 import { useOnlineRematch } from '@/game/session/use-online-rematch';
 import { useRemotePaddleInput } from '@/game/session/use-remote-paddle-input';
 import { useSessionControls } from '@/game/session/use-session-controls';
@@ -46,13 +48,10 @@ export function GameScreen({
   const canvasSize = useSharedValue<CanvasSize>({ width: 0, height: 0 });
   const paddles = useSessionPaddles(canvasSize, insets);
   const pauseMenu = useGamePauseMenu({ session, onQuit });
-  const isOnlineHost =
-    session.mode === 'online-multiplayer' && session.onlineRole === 'host';
-  const isOnlineGuest =
-    session.mode === 'online-multiplayer' && session.onlineRole === 'guest';
-  const sendAuthoritativeSnapshot = useCallback(
-    (snapshot: Parameters<SessionTransport['send']>[0]) => {
-      transport?.send(snapshot);
+  const isOnline = session.mode === 'online-multiplayer';
+  const sendRallyEvent = useCallback(
+    (event: Parameters<SessionTransport['send']>[0]) => {
+      transport?.send(event);
     },
     [transport],
   );
@@ -60,20 +59,26 @@ export function GameScreen({
     canvasSize,
     topPaddle: paddles.top,
     bottomPaddle: paddles.bottom,
-    isAuthoritative: !isOnlineGuest,
-    onAuthoritativeSnapshot:
-      isOnlineHost && transport ? sendAuthoritativeSnapshot : undefined,
+    onlineRole: isOnline ? session.onlineRole : null,
+    onRallyEvent: isOnline && transport ? sendRallyEvent : undefined,
     paused: pauseMenu.simulationPaused,
   });
   useRemotePaddleInput({
     session,
-    transport: isOnlineHost ? transport : undefined,
+    transport: isOnline ? transport : undefined,
     paddles,
   });
-  useAuthoritativeSnapshots({
-    enabled: isOnlineGuest,
+  useOnlinePaddleLayout({ session, transport, paddles });
+  useOnlineRallyEvents({
+    session,
     transport,
-    onSnapshot: gameLoop.applyAuthoritativeSnapshot,
+    onEvent: gameLoop.applyRallyEvent,
+  });
+  useOnlineMatchRecovery({
+    session,
+    transport,
+    createMatchState: gameLoop.createMatchState,
+    applyMatchState: gameLoop.applyMatchState,
   });
   const latencyMs = useTransportLatency(
     session.mode === 'online-multiplayer' ? transport : undefined,
@@ -102,7 +107,7 @@ export function GameScreen({
     paddles,
     simulationTick,
     enabled: controlsEnabled,
-    onLocalInput: isOnlineGuest && transport ? sendLocalInput : undefined,
+    onLocalInput: isOnline && transport ? sendLocalInput : undefined,
   });
   const geometry = useGameGeometry({
     canvasSize,

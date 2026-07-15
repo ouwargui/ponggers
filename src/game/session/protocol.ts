@@ -1,8 +1,14 @@
-import type { PaddleInput } from '@/game/engine/types';
+import type { PaddleInput, PlayerId } from '@/game/engine/types';
 import {
-  type GameSnapshotMessage,
-  parseGameSnapshotMessage,
-} from '@/game/session/snapshot';
+  parseRallyEventMessage,
+  type RallyEventMessage,
+} from '@/game/session/rally';
+import {
+  type MatchStateMessage,
+  type MatchStateRequestMessage,
+  parseMatchStateMessage,
+  parseMatchStateRequestMessage,
+} from '@/game/session/recovery';
 
 export type PingMessage = {
   type: 'ping';
@@ -19,12 +25,22 @@ export type RematchRequestMessage = {
   id: number;
 };
 
+export type PaddleLayoutMessage = {
+  type: 'paddle-layout';
+  playerId: PlayerId;
+  centerY: number;
+  height: number;
+};
+
 export type SessionMessage =
   | PaddleInput
   | PingMessage
   | PongMessage
   | RematchRequestMessage
-  | GameSnapshotMessage;
+  | PaddleLayoutMessage
+  | RallyEventMessage
+  | MatchStateRequestMessage
+  | MatchStateMessage;
 
 export function cloneSessionMessage(message: SessionMessage): SessionMessage {
   const clone = decodeSessionMessage(encodeSessionMessage(message));
@@ -86,8 +102,39 @@ export function parseSessionMessage(value: unknown): SessionMessage | null {
     };
   }
 
-  if (message.type === 'game-snapshot') {
-    return parseGameSnapshotMessage(message);
+  if (message.type === 'paddle-layout') {
+    if (
+      (message.playerId !== 'top' && message.playerId !== 'bottom') ||
+      !isUnitNumber(message.centerY) ||
+      !isFiniteNumber(message.height) ||
+      message.height <= 0 ||
+      message.height > 1
+    ) {
+      return null;
+    }
+
+    return {
+      type: message.type,
+      playerId: message.playerId,
+      centerY: message.centerY,
+      height: message.height,
+    };
+  }
+
+  if (
+    message.type === 'rally-started' ||
+    message.type === 'shot-returned' ||
+    message.type === 'point-conceded'
+  ) {
+    return parseRallyEventMessage(message);
+  }
+
+  if (message.type === 'match-state-request') {
+    return parseMatchStateRequestMessage(message);
+  }
+
+  if (message.type === 'match-state') {
+    return parseMatchStateMessage(message);
   }
 
   return null;
@@ -99,4 +146,8 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isNonNegativeInteger(value: unknown): value is number {
   return isFiniteNumber(value) && Number.isInteger(value) && value >= 0;
+}
+
+function isUnitNumber(value: unknown): value is number {
+  return isFiniteNumber(value) && value >= 0 && value <= 1;
 }
