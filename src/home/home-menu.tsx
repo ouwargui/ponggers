@@ -69,7 +69,7 @@ function MenuButton({ accessibilityHint, href, label }: MenuButtonProps) {
   );
 
   return href ? (
-    <Link href={href} asChild>
+    <Link href={href} replace asChild>
       {button}
     </Link>
   ) : (

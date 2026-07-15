@@ -19,7 +19,13 @@ const LAB_PACKET_LOSS = 0.08;
 const OPPONENT_TRAVEL_RATIO = 0.3;
 const OPPONENT_CYCLE_SECONDS = 2.8;
 
-export function NetworkLab({ role }: { role: OnlineSessionRole }) {
+export function NetworkLab({
+  role,
+  onExit,
+}: {
+  role: OnlineSessionRole;
+  onExit: () => void;
+}) {
   const [transportPair] = useState(() =>
     createSimulatedTransportPair({
       latencyMs: LAB_LATENCY_MS,
@@ -31,9 +37,9 @@ export function NetworkLab({ role }: { role: OnlineSessionRole }) {
   useEffect(() => transportPair.close, [transportPair]);
 
   return role === 'host' ? (
-    <HostNetworkLab transportPair={transportPair} />
+    <HostNetworkLab transportPair={transportPair} onExit={onExit} />
   ) : (
-    <GuestNetworkLab transportPair={transportPair} />
+    <GuestNetworkLab transportPair={transportPair} onExit={onExit} />
   );
 }
 
@@ -41,8 +47,10 @@ type NetworkLabTransportPair = ReturnType<typeof createSimulatedTransportPair>;
 
 function HostNetworkLab({
   transportPair,
+  onExit,
 }: {
   transportPair: NetworkLabTransportPair;
+  onExit: () => void;
 }) {
   useSimulatedOpponent(transportPair.peerB);
   usePingResponder(transportPair.peerB);
@@ -51,14 +59,17 @@ function HostNetworkLab({
     <GameScreen
       session={ONLINE_MULTIPLAYER_HOST_SESSION}
       transport={transportPair.peerA}
+      onQuit={onExit}
     />
   );
 }
 
 function GuestNetworkLab({
   transportPair,
+  onExit,
 }: {
   transportPair: NetworkLabTransportPair;
+  onExit: () => void;
 }) {
   return (
     <View style={styles.container}>
@@ -72,6 +83,7 @@ function GuestNetworkLab({
       <GameScreen
         session={ONLINE_MULTIPLAYER_GUEST_SESSION}
         transport={transportPair.peerA}
+        onQuit={onExit}
       />
     </View>
   );

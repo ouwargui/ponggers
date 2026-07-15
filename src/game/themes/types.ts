@@ -60,6 +60,14 @@ export type LatencyIndicatorRendererProps = {
   bottomInset: number;
 };
 
+export type PauseMenuRendererProps = {
+  freezesSimulation: boolean;
+  isOpen: boolean;
+  onOpen: () => void;
+  onQuit: (() => void) | null;
+  onResume: () => void;
+};
+
 export type GameThemeRenderers = {
   Arena: ComponentType<ArenaRendererProps>;
   CenterLine: ComponentType<CenterLineRendererProps>;
@@ -67,6 +75,7 @@ export type GameThemeRenderers = {
   Ball: ComponentType<BallRendererProps>;
   MatchOverlay: ComponentType<MatchOverlayRendererProps>;
   LatencyIndicator: ComponentType<LatencyIndicatorRendererProps>;
+  PauseMenu: ComponentType<PauseMenuRendererProps>;
 };
 
 export type GameTheme = {

@@ -31,7 +31,12 @@ export default function RootLayout() {
       <GameThemeProvider theme={defaultGameTheme}>
         <StatusBar hidden />
         <Stack
-          screenOptions={{ contentStyle: styles.screen, headerShown: false }}
+          screenOptions={{
+            animation: 'fade',
+            contentStyle: styles.screen,
+            gestureEnabled: false,
+            headerShown: false,
+          }}
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="game/local" />
@@ -39,7 +44,7 @@ export default function RootLayout() {
 
         {__DEV__ && networkLabRole ? (
           <View style={styles.networkLab}>
-            <NetworkLab role={networkLabRole} />
+            <NetworkLab role={networkLabRole} onExit={exitNetworkLab} />
           </View>
         ) : null}
       </GameThemeProvider>

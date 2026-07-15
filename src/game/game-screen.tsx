@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { PaddleInput } from '@/game/engine/types';
 import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
+import { useGamePauseMenu } from '@/game/pause/use-game-pause-menu';
 import { useBallPresentation } from '@/game/presentation/use-ball-presentation';
 import { GameScene } from '@/game/rendering/game-scene';
 import type { CanvasSize } from '@/game/rendering/types';
@@ -28,19 +29,23 @@ type GameScreenProps = {
   session?: GameSessionDefinition;
   transport?: SessionTransport;
   hapticsEnabled?: boolean;
+  onQuit?: () => void;
 };
 
 export function GameScreen({
   session = LOCAL_MULTIPLAYER_SESSION,
   transport,
   hapticsEnabled = true,
+  onQuit,
 }: GameScreenProps) {
   const theme = useGameTheme();
   const MatchOverlay = theme.renderers.MatchOverlay;
   const LatencyIndicator = theme.renderers.LatencyIndicator;
+  const PauseMenu = theme.renderers.PauseMenu;
   const insets = useSafeAreaInsets();
   const canvasSize = useSharedValue<CanvasSize>({ width: 0, height: 0 });
   const paddles = useSessionPaddles(canvasSize, insets);
+  const pauseMenu = useGamePauseMenu({ session, onQuit });
   const isOnlineHost =
     session.mode === 'online-multiplayer' && session.onlineRole === 'host';
   const isOnlineGuest =
@@ -58,6 +63,7 @@ export function GameScreen({
     isAuthoritative: !isOnlineGuest,
     onAuthoritativeSnapshot:
       isOnlineHost && transport ? sendAuthoritativeSnapshot : undefined,
+    paused: pauseMenu.simulationPaused,
   });
   useRemotePaddleInput({
     session,
@@ -82,7 +88,8 @@ export function GameScreen({
   });
   usePaddleHitHaptics(lastImpact, session, hapticsEnabled);
   const ballPresentation = useBallPresentation(ball, lastImpact);
-  const controlsEnabled = match.phase.type !== 'match-ended';
+  const controlsEnabled =
+    match.phase.type !== 'match-ended' && !pauseMenu.isOpen;
   const sendLocalInput = useCallback(
     (input: PaddleInput) => {
       transport?.send(input);
@@ -112,14 +119,6 @@ export function GameScreen({
         topGesture={controls.top}
         bottomGesture={controls.bottom}
       />
-      {latencyMs !== null && latencyPlayer !== null ? (
-        <LatencyIndicator
-          latencyMs={latencyMs}
-          player={latencyPlayer}
-          topInset={insets.top}
-          bottomInset={insets.bottom}
-        />
-      ) : null}
       <MatchOverlay
         match={match}
         countdown={countdown}
@@ -130,6 +129,21 @@ export function GameScreen({
         hapticsEnabled={hapticsEnabled}
         onRematch={handleRematch}
       />
+      <PauseMenu
+        freezesSimulation={pauseMenu.freezesSimulation}
+        isOpen={pauseMenu.isOpen}
+        onOpen={pauseMenu.open}
+        onQuit={onQuit ? pauseMenu.quit : null}
+        onResume={pauseMenu.resume}
+      />
+      {latencyMs !== null && latencyPlayer !== null ? (
+        <LatencyIndicator
+          latencyMs={latencyMs}
+          player={latencyPlayer}
+          topInset={insets.top}
+          bottomInset={insets.bottom}
+        />
+      ) : null}
     </View>
   );
 }

@@ -44,6 +44,7 @@ type GameLoopOptions = {
   bottomPaddle: SharedValue<PaddleState>;
   isAuthoritative?: boolean;
   onAuthoritativeSnapshot?: (snapshot: GameSnapshotMessage) => void;
+  paused?: SharedValue<boolean>;
 };
 
 type GameLoopSnapshot = {
@@ -114,6 +115,7 @@ export function useGameLoop({
   bottomPaddle,
   isAuthoritative = true,
   onAuthoritativeSnapshot,
+  paused,
 }: GameLoopOptions) {
   const [snapshot, setSnapshot] = useState<GameLoopSnapshot>(() => {
     const match = createInitialMatchState();
@@ -201,6 +203,11 @@ export function useGameLoop({
 
   useFrameCallback(({ timeSincePreviousFrame }) => {
     if (timeSincePreviousFrame === null) {
+      return;
+    }
+
+    if (paused?.value) {
+      accumulatedTime.value = 0;
       return;
     }
 

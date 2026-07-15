@@ -34,5 +34,6 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     opacity: 0.48,
     textAlign: 'right',
+    zIndex: 3,
   },
 });
