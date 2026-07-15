@@ -1,7 +1,20 @@
 export const ROOM_CODE_LENGTH = 6;
 export const MAX_SIGNAL_LENGTH = 256_000;
+const MAX_ICE_SERVERS = 8;
+const MAX_ICE_URLS_PER_SERVER = 4;
 
 export type SignalingRole = 'host' | 'guest';
+
+export type IceServerConfig = {
+  credential?: string;
+  urls: string[];
+  username?: string;
+};
+
+export type SessionConfig = {
+  expiresAt: number | null;
+  iceServers: IceServerConfig[];
+};
 
 export type ClientSignalingMessage =
   | { type: 'create-room' }
@@ -15,10 +28,13 @@ export type SignalingErrorCode =
   | 'NOT_IN_ROOM'
   | 'PEER_NOT_READY'
   | 'ROOM_FULL'
+  | 'ROOM_EXPIRED'
   | 'ROOM_NOT_FOUND'
+  | 'RATE_LIMITED'
   | 'SERVER_FULL';
 
 export type ServerSignalingMessage =
+  | ({ type: 'session-config' } & SessionConfig)
   | { type: 'room-created'; roomCode: string }
   | { type: 'room-joined'; roomCode: string }
   | { type: 'peer-joined' }
@@ -33,7 +49,9 @@ const SIGNALING_ERROR_CODES = new Set<SignalingErrorCode>([
   'NOT_IN_ROOM',
   'PEER_NOT_READY',
   'ROOM_FULL',
+  'ROOM_EXPIRED',
   'ROOM_NOT_FOUND',
+  'RATE_LIMITED',
   'SERVER_FULL',
 ]);
 
@@ -104,6 +122,25 @@ export function parseServerSignalingMessage(
     return { type: value.type };
   }
 
+  if (value.type === 'session-config') {
+    const iceServers = parseIceServers(value.iceServers);
+    const expiresAt = value.expiresAt;
+
+    if (
+      !iceServers ||
+      (expiresAt !== null &&
+        (!Number.isSafeInteger(expiresAt) || Number(expiresAt) <= 0))
+    ) {
+      return null;
+    }
+
+    return {
+      type: 'session-config',
+      expiresAt: expiresAt === null ? null : Number(expiresAt),
+      iceServers,
+    };
+  }
+
   if (
     (value.type === 'room-created' || value.type === 'room-joined') &&
     isRoomCode(value.roomCode)
@@ -135,6 +172,73 @@ export function parseServerSignalingMessage(
   }
 
   return null;
+}
+
+function parseIceServers(value: unknown): IceServerConfig[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > MAX_ICE_SERVERS
+  ) {
+    return null;
+  }
+
+  const iceServers: IceServerConfig[] = [];
+
+  for (const item of value) {
+    if (!isRecord(item)) {
+      return null;
+    }
+
+    const urls = parseIceUrls(item.urls);
+    const username = item.username;
+    const credential = item.credential;
+    const hasCredentials = username !== undefined || credential !== undefined;
+
+    if (
+      !urls ||
+      (hasCredentials &&
+        (typeof username !== 'string' ||
+          username.length === 0 ||
+          username.length > 512 ||
+          typeof credential !== 'string' ||
+          credential.length === 0 ||
+          credential.length > 512))
+    ) {
+      return null;
+    }
+
+    iceServers.push(hasCredentials ? { urls, username, credential } : { urls });
+  }
+
+  return iceServers;
+}
+
+function parseIceUrls(value: unknown): string[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > MAX_ICE_URLS_PER_SERVER
+  ) {
+    return null;
+  }
+
+  const urls: string[] = [];
+
+  for (const url of value) {
+    if (
+      typeof url !== 'string' ||
+      url.length === 0 ||
+      url.length > 2048 ||
+      !/^(stun|stuns|turn|turns):/i.test(url)
+    ) {
+      return null;
+    }
+
+    urls.push(url);
+  }
+
+  return urls;
 }
 
 function decodeMessage<T>(

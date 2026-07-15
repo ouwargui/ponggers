@@ -4,16 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --secrets-file .dev.vars",
+    "deploy:dry-run": "wrangler deploy --dry-run",
     "test": "bun test",
-    "typecheck": "bunx tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ponggers/signaling-protocol": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.14",
-    "typescript": "~6.0.3"
+    "@cloudflare/workers-types": "5.20260715.1",
+    "typescript": "~6.0.3",
+    "wrangler": "4.111.0"
   }
 }

@@ -111,15 +111,61 @@ export function OnlineMatchScreen() {
 
   if (hasConnected && connection && role) {
     return (
-      <GameScreen
-        session={
-          role === 'host'
-            ? ONLINE_MULTIPLAYER_HOST_SESSION
-            : ONLINE_MULTIPLAYER_GUEST_SESSION
-        }
-        transport={connection.peer.transport}
-        onQuit={quit}
-      />
+      <View style={styles.gameContainer}>
+        <GameScreen
+          session={
+            role === 'host'
+              ? ONLINE_MULTIPLAYER_HOST_SESSION
+              : ONLINE_MULTIPLAYER_GUEST_SESSION
+          }
+          transport={connection.peer.transport}
+          onQuit={quit}
+        />
+        {snapshot.state === 'reconnecting' || snapshot.state === 'failed' ? (
+          <View
+            accessibilityLiveRegion="assertive"
+            style={[
+              styles.connectionOverlay,
+              { backgroundColor: `${palette.arena}E8` },
+            ]}
+          >
+            <Text
+              style={[
+                styles.connectionOverlayTitle,
+                { color: palette.ball.core },
+              ]}
+            >
+              {snapshot.state === 'reconnecting'
+                ? 'RECONNECTING'
+                : 'CONNECTION LOST'}
+            </Text>
+            <Text
+              style={[
+                styles.connectionOverlayMessage,
+                { color: `${palette.ball.core}AA` },
+              ]}
+            >
+              {snapshot.state === 'reconnecting'
+                ? 'Trying to restore the peer-to-peer match…'
+                : snapshot.error}
+            </Text>
+            {snapshot.state === 'failed' ? (
+              <>
+                <LobbyButton
+                  color={palette.players.bottom.glow}
+                  label="NEW MATCH"
+                  onPress={resetLobby}
+                />
+                <LobbyButton
+                  color={palette.ball.core}
+                  label="HOME"
+                  onPress={quit}
+                />
+              </>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
     );
   }
 
@@ -320,6 +366,32 @@ function getConnectionLabel(state: OnlineMatchConnectionState) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  gameContainer: { flex: 1 },
+  connectionOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    paddingHorizontal: 32,
+  },
+  connectionOverlayTitle: {
+    textAlign: 'center',
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: 5,
+  },
+  connectionOverlayMessage: {
+    maxWidth: 320,
+    marginBottom: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 21,
+  },
   topArena: {
     position: 'absolute',
     top: 0,

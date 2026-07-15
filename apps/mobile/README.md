@@ -21,11 +21,11 @@ bun install
 
 ## Development
 
-Start the signaling server, which listens on port `3001` and all local network
+Start the signaling Worker, which listens on port `8787` and all local network
 interfaces:
 
 ```bash
-bun run dev:signaling
+bun --filter @ponggers/signaling dev
 ```
 
 Start the Expo development client in another terminal:
@@ -35,8 +35,8 @@ bun run dev
 ```
 
 In development, the app derives the signaling hostname from the Expo dev-server
-host. To override it—required for deployed builds—copy `.env.example` to a local
-environment file and configure:
+host and uses port `8787`. To override it—required for deployed builds—copy
+`.env.example` to `.env.local` and configure:
 
 ```bash
 EXPO_PUBLIC_SIGNALING_URL=wss://your-signaling-service.example/ws

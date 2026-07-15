@@ -1,3 +1,4 @@
+import { type Href, useRouter } from 'expo-router';
 import Stack from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -15,7 +16,11 @@ import { GameThemeProvider } from '@/game/themes/game-theme-provider';
 import { defaultGameTheme } from '@/game/themes/theme-registry';
 
 export default function RootLayout() {
+  const router = useRouter();
   const [activeLab, setActiveLab] = useState<GameDevLab | null>(null);
+  const openEnvironment = useCallback(() => {
+    router.replace('/development/environment' as Href);
+  }, [router]);
   const openNetworkLab = useCallback((role: OnlineSessionRole) => {
     setActiveLab({ type: 'network', role });
   }, []);
@@ -28,6 +33,7 @@ export default function RootLayout() {
 
   useGameDevMenu({
     activeLab,
+    onOpenEnvironment: openEnvironment,
     onOpenNetworkLab: openNetworkLab,
     onOpenRtcLab: openRtcLab,
     onExitLab: exitLab,
@@ -46,6 +52,7 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" />
+          <Stack.Screen name="development/environment" />
           <Stack.Screen name="online" />
           <Stack.Screen name="game/local" />
         </Stack>

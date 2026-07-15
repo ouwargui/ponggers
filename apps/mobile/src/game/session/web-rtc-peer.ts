@@ -1,3 +1,4 @@
+import type { IceServerConfig } from '@ponggers/signaling-protocol';
 import { RTCPeerConnection } from 'react-native-webrtc';
 
 import type { OnlineSessionRole } from '@/game/session/definition';
@@ -17,14 +18,11 @@ const REALTIME_DATA_CHANNEL_LABEL = 'ponggers-realtime';
 const ICE_GATHERING_SETTLE_MS = 1_500;
 const ICE_GATHERING_TIMEOUT_MS = 8_000;
 
-export type WebRtcIceServer = {
-  credential?: string;
-  urls: string | string[];
-  username?: string;
-};
+export type WebRtcIceServer = IceServerConfig;
 
 type WebRtcSessionPeerOptions = {
   iceServers?: WebRtcIceServer[];
+  iceTransportPolicy?: 'all' | 'relay';
 };
 
 type PeerConnectionEventTarget = {
@@ -36,7 +34,7 @@ type PeerConnectionEventTarget = {
 };
 
 const DEVELOPMENT_ICE_SERVERS: WebRtcIceServer[] = [
-  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: ['stun:stun.l.google.com:19302'] },
 ];
 
 export class WebRtcSessionPeer {
@@ -48,10 +46,16 @@ export class WebRtcSessionPeer {
 
   constructor(
     role: OnlineSessionRole,
-    { iceServers = DEVELOPMENT_ICE_SERVERS }: WebRtcSessionPeerOptions = {},
+    {
+      iceServers = DEVELOPMENT_ICE_SERVERS,
+      iceTransportPolicy = 'all',
+    }: WebRtcSessionPeerOptions = {},
   ) {
     this.#role = role;
-    this.#peerConnection = new RTCPeerConnection({ iceServers });
+    this.#peerConnection = new RTCPeerConnection({
+      iceServers,
+      iceTransportPolicy,
+    });
     this.#peerConnectionEvents = getPeerConnectionEvents(this.#peerConnection);
     this.#peerConnectionEvents.addEventListener(
       'connectionstatechange',

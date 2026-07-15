@@ -9,6 +9,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "bun test",
+    "typecheck": "bunx tsc --noEmit",
     "check": "bunx --bun @biomejs/biome check --write",
     "format": "bunx --bun @biomejs/biome format --write",
     "lint": "bunx --bun @biomejs/biome lint --write"

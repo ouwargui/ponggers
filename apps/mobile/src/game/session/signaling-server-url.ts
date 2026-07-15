@@ -1,12 +1,14 @@
 import Constants from 'expo-constants';
 
-const DEFAULT_SIGNALING_PORT = 3001;
+import { publicEnvironment } from '@/config/public-environment';
+
+const DEFAULT_SIGNALING_PORT = 8787;
 
 export function getSignalingServerUrl() {
-  const configuredUrl = process.env.EXPO_PUBLIC_SIGNALING_URL?.trim();
+  const configuredUrl = publicEnvironment.signalingUrl?.trim();
 
   if (configuredUrl) {
-    return configuredUrl;
+    return validateSignalingUrl(configuredUrl, __DEV__);
   }
 
   if (!__DEV__) {
@@ -15,6 +17,26 @@ export function getSignalingServerUrl() {
 
   const developmentHost = getDevelopmentHost(Constants.expoConfig?.hostUri);
   return `ws://${developmentHost}:${DEFAULT_SIGNALING_PORT}/ws`;
+}
+
+function validateSignalingUrl(value: string, isDevelopment: boolean) {
+  let url: URL;
+
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('EXPO_PUBLIC_SIGNALING_URL is not a valid URL');
+  }
+
+  if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
+    throw new Error('EXPO_PUBLIC_SIGNALING_URL must use ws:// or wss://');
+  }
+
+  if (!isDevelopment && url.protocol !== 'wss:') {
+    throw new Error('Production signaling must use wss://');
+  }
+
+  return url.toString();
 }
 
 function getDevelopmentHost(hostUri: string | undefined) {

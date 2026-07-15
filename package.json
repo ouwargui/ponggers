@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "bun --workspaces --if-present --parallel dev",
+    "deploy:signaling": "bun --filter @ponggers/signaling deploy",
+    "test": "bun test",
+    "typecheck": "bun --workspaces --if-present typecheck",
     "lint": "bun --workspaces --if-present lint",
     "format": "bun --workspaces --if-present format"
   },

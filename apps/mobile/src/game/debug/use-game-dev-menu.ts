@@ -5,6 +5,7 @@ import type { OnlineSessionRole } from '@/game/session/definition';
 
 type UseGameDevMenuOptions = {
   activeLab: GameDevLab | null;
+  onOpenEnvironment: () => void;
   onOpenNetworkLab: (role: OnlineSessionRole) => void;
   onOpenRtcLab: (role: OnlineSessionRole) => void;
   onExitLab: () => void;
@@ -17,6 +18,7 @@ export type GameDevLab = {
 
 export function useGameDevMenu({
   activeLab,
+  onOpenEnvironment,
   onOpenNetworkLab,
   onOpenRtcLab,
   onExitLab,
@@ -36,6 +38,11 @@ export function useGameDevMenu({
             },
           ]
         : [
+            {
+              name: 'Open Environment Variables',
+              callback: onOpenEnvironment,
+              shouldCollapse: true,
+            },
             {
               name: 'Open Network Lab as Host',
               callback: () => onOpenNetworkLab('host'),
@@ -58,5 +65,5 @@ export function useGameDevMenu({
             },
           ],
     );
-  }, [activeLab, onExitLab, onOpenNetworkLab, onOpenRtcLab]);
+  }, [activeLab, onExitLab, onOpenEnvironment, onOpenNetworkLab, onOpenRtcLab]);
 }
