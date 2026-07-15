@@ -4,7 +4,7 @@ import {
   useFrameCallback,
   useSharedValue,
 } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import {
   BALL_RADIUS_RATIO,
@@ -14,9 +14,10 @@ import {
 import {
   advanceMatchPhase,
   createInitialMatchState,
+  getCountdownValue,
   recordGoal,
 } from '@/game/engine/match';
-import { decayPaddleVelocity } from '@/game/engine/paddle';
+import { decayPaddleVelocity, resetPaddleForMatch } from '@/game/engine/paddle';
 import { createServe, createWaitingBall } from '@/game/engine/serve';
 import { stepBall } from '@/game/engine/simulation';
 import type {
@@ -35,22 +36,60 @@ type GameLoopOptions = {
   bottomPaddle: SharedValue<PaddleState>;
 };
 
+type GameLoopSnapshot = {
+  match: MatchState;
+  countdown: number | null;
+};
+
 export function useGameLoop({
   canvasSize,
   topPaddle,
   bottomPaddle,
 }: GameLoopOptions) {
-  const [matchSnapshot, setMatchSnapshot] = useState<MatchState>(() =>
-    createInitialMatchState(),
+  const [snapshot, setSnapshot] = useState<GameLoopSnapshot>(() => {
+    const match = createInitialMatchState();
+    return { match, countdown: getCountdownValue(match, 0) };
+  });
+  const updateSnapshot = useCallback(
+    (nextMatch: MatchState, countdown: number | null) => {
+      setSnapshot({ match: nextMatch, countdown });
+    },
+    [],
   );
-  const updateMatchSnapshot = useCallback((nextMatch: MatchState) => {
-    setMatchSnapshot(nextMatch);
-  }, []);
   const ball = useSharedValue<BallState>(createWaitingBall());
-  const match = useSharedValue<MatchState>(matchSnapshot);
+  const match = useSharedValue<MatchState>(snapshot.match);
+  const countdown = useSharedValue<number | null>(snapshot.countdown);
   const lastImpact = useSharedValue<BallImpactEvent | null>(null);
   const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
+
+  const restartMatch = useCallback(() => {
+    scheduleOnUI(() => {
+      'worklet';
+
+      const nextMatch = createInitialMatchState(simulationTick.value);
+      const nextCountdown = getCountdownValue(nextMatch, simulationTick.value);
+
+      accumulatedTime.value = 0;
+      ball.value = createWaitingBall();
+      countdown.value = nextCountdown;
+      lastImpact.value = null;
+      topPaddle.value = resetPaddleForMatch(topPaddle.value);
+      bottomPaddle.value = resetPaddleForMatch(bottomPaddle.value);
+      match.value = nextMatch;
+      scheduleOnRN(updateSnapshot, nextMatch, nextCountdown);
+    });
+  }, [
+    accumulatedTime,
+    ball,
+    bottomPaddle,
+    countdown,
+    lastImpact,
+    match,
+    simulationTick,
+    topPaddle,
+    updateSnapshot,
+  ]);
 
   useFrameCallback(({ timeSincePreviousFrame }) => {
     if (timeSincePreviousFrame === null) {
@@ -131,9 +170,20 @@ export function useGameLoop({
       ball.value = nextBall;
       simulationTick.value = nextTick;
 
-      if (nextMatch !== match.value) {
+      const didMatchChange = nextMatch !== match.value;
+      const nextCountdown = getCountdownValue(nextMatch, nextTick);
+      const didCountdownChange = nextCountdown !== countdown.value;
+
+      if (didMatchChange) {
         match.value = nextMatch;
-        scheduleOnRN(updateMatchSnapshot, nextMatch);
+      }
+
+      if (didCountdownChange) {
+        countdown.value = nextCountdown;
+      }
+
+      if (didMatchChange || didCountdownChange) {
+        scheduleOnRN(updateSnapshot, nextMatch, nextCountdown);
       }
 
       if (didResetBall) {
@@ -152,5 +202,12 @@ export function useGameLoop({
     }
   });
 
-  return { ball, lastImpact, match: matchSnapshot };
+  return {
+    ball,
+    countdown: snapshot.countdown,
+    lastImpact,
+    match: snapshot.match,
+    restartMatch,
+    simulationTick,
+  };
 }

@@ -12,10 +12,12 @@ export const neonPalette = {
   },
   players: {
     top: {
+      label: 'ORANGE',
       core: '#fff1e8',
       glow: '#ff5a1f',
     },
     bottom: {
+      label: 'CYAN',
       core: '#e7fdff',
       glow: '#00e5ff',
     },

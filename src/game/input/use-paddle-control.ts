@@ -11,6 +11,11 @@ import type { CanvasSize } from '@/game/rendering/types';
 
 export type PaddleRuntimeState = SharedValue<PaddleState>;
 
+type PaddleControlOptions = {
+  enabled?: boolean;
+  simultaneousWith?: PanGesture;
+};
+
 export function usePaddleState(
   id: PlayerId,
   canvasSize: SharedValue<CanvasSize>,
@@ -45,9 +50,10 @@ export function usePaddleState(
 export function usePaddleControl(
   canvasSize: SharedValue<CanvasSize>,
   paddle: PaddleRuntimeState,
-  simultaneousWith?: PanGesture,
+  { enabled = true, simultaneousWith }: PaddleControlOptions = {},
 ): PanGesture {
   return usePanGesture({
+    enabled,
     minDistance: 0,
     shouldCancelWhenOutside: false,
     simultaneousWith,

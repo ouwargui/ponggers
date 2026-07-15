@@ -1,24 +1,29 @@
 import type { ComponentType } from 'react';
 import type { SharedValue } from 'react-native-reanimated';
 
-import type { PlayerId } from '@/game/engine/types';
+import type { MatchState, PlayerId } from '@/game/engine/types';
 import type {
   CanvasSize,
   GameGeometry,
   SceneBall,
   ScenePaddle,
 } from '@/game/rendering/types';
+import type { HudOrientation } from '@/game/session-config';
 
 export type GlowPalette = {
   core: string;
   glow: string;
 };
 
+export type PlayerPalette = GlowPalette & {
+  label: string;
+};
+
 export type GameThemePalette = {
   arena: string;
   centerLine: GlowPalette;
   ball: GlowPalette;
-  players: Record<PlayerId, GlowPalette>;
+  players: Record<PlayerId, PlayerPalette>;
 };
 
 export type CenterLineRendererProps = {
@@ -37,10 +42,14 @@ export type BallRendererProps = {
   ball: SceneBall;
 };
 
-export type ScoreHudRendererProps = {
-  score: Record<PlayerId, number>;
+export type MatchOverlayRendererProps = {
+  match: MatchState;
+  countdown: number | null;
+  hudOrientation: HudOrientation;
+  localPlayerId: PlayerId | null;
   topInset: number;
   bottomInset: number;
+  onRematch: () => void;
 };
 
 export type GameThemeRenderers = {
@@ -48,7 +57,7 @@ export type GameThemeRenderers = {
   CenterLine: ComponentType<CenterLineRendererProps>;
   Paddle: ComponentType<PaddleRendererProps>;
   Ball: ComponentType<BallRendererProps>;
-  ScoreHud: ComponentType<ScoreHudRendererProps>;
+  MatchOverlay: ComponentType<MatchOverlayRendererProps>;
 };
 
 export type GameTheme = {

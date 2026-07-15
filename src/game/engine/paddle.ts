@@ -45,6 +45,19 @@ export function layoutPaddle(
   };
 }
 
+export function resetPaddleForMatch(paddle: PaddleState): PaddleState {
+  'worklet';
+
+  const initialPaddle = createPaddle(paddle.id);
+
+  return {
+    ...paddle,
+    centerX: initialPaddle.centerX,
+    width: initialPaddle.width,
+    velocityX: initialPaddle.velocityX,
+  };
+}
+
 export function decayPaddleVelocity(
   paddle: PaddleState,
   deltaSeconds: number,

@@ -48,7 +48,10 @@ export type GameEvent = BallImpactEvent | GoalEvent;
 export type MatchPhase =
   | {
       type: 'countdown';
+      startedAtTick: number;
       endsAtTick: number;
+      countFrom: number;
+      stepDurationTicks: number;
       serveToward: PlayerId;
     }
   | {

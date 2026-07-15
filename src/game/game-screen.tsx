@@ -12,27 +12,39 @@ import { GameScene } from '@/game/rendering/game-scene';
 import type { CanvasSize } from '@/game/rendering/types';
 import { useGameGeometry } from '@/game/rendering/use-game-geometry';
 import { useGameLoop } from '@/game/runtime/use-game-loop';
+import {
+  type GameSessionConfig,
+  LOCAL_MULTIPLAYER_SESSION,
+} from '@/game/session-config';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 
-export function GameScreen() {
+type GameScreenProps = {
+  session?: GameSessionConfig;
+};
+
+export function GameScreen({
+  session = LOCAL_MULTIPLAYER_SESSION,
+}: GameScreenProps) {
   const theme = useGameTheme();
-  const ScoreHud = theme.renderers.ScoreHud;
+  const MatchOverlay = theme.renderers.MatchOverlay;
   const insets = useSafeAreaInsets();
   const canvasSize = useSharedValue<CanvasSize>({ width: 0, height: 0 });
   const topPaddle = usePaddleState('top', canvasSize, insets.top);
   const bottomPaddle = usePaddleState('bottom', canvasSize, insets.bottom);
-  const { ball, lastImpact, match } = useGameLoop({
+  const { ball, countdown, lastImpact, match, restartMatch } = useGameLoop({
     canvasSize,
     topPaddle,
     bottomPaddle,
   });
   const ballPresentation = useBallPresentation(ball, lastImpact);
-  const topPaddleGesture = usePaddleControl(canvasSize, topPaddle);
-  const bottomPaddleGesture = usePaddleControl(
-    canvasSize,
-    bottomPaddle,
-    topPaddleGesture,
-  );
+  const controlsEnabled = match.phase.type !== 'match-ended';
+  const topPaddleGesture = usePaddleControl(canvasSize, topPaddle, {
+    enabled: controlsEnabled,
+  });
+  const bottomPaddleGesture = usePaddleControl(canvasSize, bottomPaddle, {
+    enabled: controlsEnabled,
+    simultaneousWith: topPaddleGesture,
+  });
   const geometry = useGameGeometry({
     canvasSize,
     topPaddle,
@@ -48,10 +60,14 @@ export function GameScreen() {
         topGesture={topPaddleGesture}
         bottomGesture={bottomPaddleGesture}
       />
-      <ScoreHud
-        score={match.score}
+      <MatchOverlay
+        match={match}
+        countdown={countdown}
+        hudOrientation={session.hudOrientation}
+        localPlayerId={session.localPlayerId}
         topInset={insets.top}
         bottomInset={insets.bottom}
+        onRematch={restartMatch}
       />
     </View>
   );

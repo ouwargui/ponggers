@@ -15,5 +15,12 @@ export const BALL_IMPACT_REFERENCE_SPEED = 1.5;
 export const GAME_TICK_RATE = 120;
 export const MAX_FRAME_TIME_SECONDS = 0.1;
 export const MATCH_WINNING_SCORE = 5;
-export const MATCH_COUNTDOWN_TICKS = GAME_TICK_RATE;
 export const MATCH_POINT_PAUSE_TICKS = Math.round(GAME_TICK_RATE * 0.65);
+export const MATCH_OPENING_COUNTDOWN_FROM = 3;
+export const MATCH_OPENING_COUNTDOWN_STEP_TICKS = Math.round(
+  GAME_TICK_RATE * 0.6,
+);
+export const MATCH_POINT_COUNTDOWN_FROM = 2;
+export const MATCH_POINT_COUNTDOWN_STEP_TICKS = Math.round(
+  GAME_TICK_RATE * 0.5,
+);

@@ -1,23 +1,74 @@
 import {
-  MATCH_COUNTDOWN_TICKS,
+  MATCH_OPENING_COUNTDOWN_FROM,
+  MATCH_OPENING_COUNTDOWN_STEP_TICKS,
+  MATCH_POINT_COUNTDOWN_FROM,
+  MATCH_POINT_COUNTDOWN_STEP_TICKS,
   MATCH_POINT_PAUSE_TICKS,
   MATCH_WINNING_SCORE,
 } from '@/game/constants';
-import type { GoalEvent, MatchState } from '@/game/engine/types';
+import type {
+  GoalEvent,
+  MatchPhase,
+  MatchState,
+  PlayerId,
+} from '@/game/engine/types';
 
-export function createInitialMatchState(startTick = 0): MatchState {
+type CountdownKind = 'opening' | 'between-points';
+
+function createCountdownPhase(
+  startTick: number,
+  serveToward: PlayerId,
+  kind: CountdownKind,
+): Extract<MatchPhase, { type: 'countdown' }> {
+  'worklet';
+
+  const countFrom =
+    kind === 'opening'
+      ? MATCH_OPENING_COUNTDOWN_FROM
+      : MATCH_POINT_COUNTDOWN_FROM;
+  const stepDurationTicks =
+    kind === 'opening'
+      ? MATCH_OPENING_COUNTDOWN_STEP_TICKS
+      : MATCH_POINT_COUNTDOWN_STEP_TICKS;
+
+  return {
+    type: 'countdown',
+    startedAtTick: startTick,
+    endsAtTick: startTick + countFrom * stepDurationTicks,
+    countFrom,
+    stepDurationTicks,
+    serveToward,
+  };
+}
+
+export function createInitialMatchState(
+  startTick = 0,
+  serveToward: PlayerId = 'bottom',
+): MatchState {
   'worklet';
 
   return {
-    phase: {
-      type: 'countdown',
-      endsAtTick: startTick + MATCH_COUNTDOWN_TICKS,
-      serveToward: 'bottom',
-    },
+    phase: createCountdownPhase(startTick, serveToward, 'opening'),
     score: { top: 0, bottom: 0 },
     winningScore: MATCH_WINNING_SCORE,
     rallyStartedAtTick: null,
   };
+}
+
+export function getCountdownValue(
+  match: MatchState,
+  tick: number,
+): number | null {
+  'worklet';
+
+  if (match.phase.type !== 'countdown') {
+    return null;
+  }
+
+  const elapsedTicks = Math.max(tick - match.phase.startedAtTick, 0);
+  const elapsedSteps = Math.floor(elapsedTicks / match.phase.stepDurationTicks);
+
+  return Math.max(match.phase.countFrom - elapsedSteps, 1);
 }
 
 export function advanceMatchPhase(match: MatchState, tick: number): MatchState {
@@ -26,11 +77,11 @@ export function advanceMatchPhase(match: MatchState, tick: number): MatchState {
   if (match.phase.type === 'point-scored' && tick >= match.phase.endsAtTick) {
     return {
       ...match,
-      phase: {
-        type: 'countdown',
-        endsAtTick: tick + MATCH_COUNTDOWN_TICKS,
-        serveToward: match.phase.concededBy,
-      },
+      phase: createCountdownPhase(
+        tick,
+        match.phase.concededBy,
+        'between-points',
+      ),
     };
   }
 

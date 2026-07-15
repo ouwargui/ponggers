@@ -9,7 +9,6 @@ import {
   RoundedRect,
   vec,
 } from '@shopify/react-native-skia';
-import { Text, type TextStyle, View } from 'react-native';
 import { useDerivedValue } from 'react-native-reanimated';
 
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
@@ -18,7 +17,6 @@ import type {
   BallRendererProps,
   CenterLineRendererProps,
   PaddleRendererProps,
-  ScoreHudRendererProps,
 } from '@/game/themes/types';
 
 const CONTROL_ZONE_OPACITY = 0.12;
@@ -195,52 +193,5 @@ export function NeonBall({ ball }: BallRendererProps) {
         />
       </Group>
     </Group>
-  );
-}
-
-function NeonScore({
-  value,
-  player,
-}: {
-  value: number;
-  player: 'top' | 'bottom';
-}) {
-  const colors = neonPalette.players[player];
-  const style: TextStyle = {
-    color: colors.core,
-    fontSize: 28,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-    textShadowColor: colors.glow,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-  };
-
-  return <Text style={style}>{value}</Text>;
-}
-
-export function NeonScoreHud({
-  score,
-  topInset,
-  bottomInset,
-}: ScoreHudRendererProps) {
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: topInset + 72,
-        paddingBottom: bottomInset + 72,
-      }}
-    >
-      <NeonScore player="top" value={score.top} />
-      <NeonScore player="bottom" value={score.bottom} />
-    </View>
   );
 }

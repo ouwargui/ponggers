@@ -1,9 +1,9 @@
+import { NeonMatchOverlay } from '@/game/themes/neon/neon-match-overlay';
 import {
   NeonArena,
   NeonBall,
   NeonCenterLine,
   NeonPaddle,
-  NeonScoreHud,
 } from '@/game/themes/neon/neon-renderers';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type { GameTheme } from '@/game/themes/types';
@@ -17,6 +17,6 @@ export const neonTheme = {
     CenterLine: NeonCenterLine,
     Paddle: NeonPaddle,
     Ball: NeonBall,
-    ScoreHud: NeonScoreHud,
+    MatchOverlay: NeonMatchOverlay,
   },
 } satisfies GameTheme;
