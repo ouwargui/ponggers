@@ -8,7 +8,7 @@ import type {
   SceneBall,
   ScenePaddle,
 } from '@/game/rendering/types';
-import type { HudOrientation } from '@/game/session-config';
+import type { HudOrientation } from '@/game/session/definition';
 
 export type GlowPalette = {
   core: string;

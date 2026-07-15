@@ -1,54 +1,68 @@
+import { useCallback } from 'react';
 import { View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import type { PaddleInput } from '@/game/engine/types';
+import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
-import {
-  usePaddleControl,
-  usePaddleState,
-} from '@/game/input/use-paddle-control';
 import { useBallPresentation } from '@/game/presentation/use-ball-presentation';
 import { GameScene } from '@/game/rendering/game-scene';
 import type { CanvasSize } from '@/game/rendering/types';
 import { useGameGeometry } from '@/game/rendering/use-game-geometry';
 import { useGameLoop } from '@/game/runtime/use-game-loop';
 import {
-  type GameSessionConfig,
+  type GameSessionDefinition,
   LOCAL_MULTIPLAYER_SESSION,
-} from '@/game/session-config';
+} from '@/game/session/definition';
+import type { SessionTransport } from '@/game/session/transport';
+import { useSessionControls } from '@/game/session/use-session-controls';
+import { useSessionPaddles } from '@/game/session/use-session-paddles';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 
 type GameScreenProps = {
-  session?: GameSessionConfig;
+  session?: GameSessionDefinition;
+  transport?: SessionTransport;
 };
 
 export function GameScreen({
   session = LOCAL_MULTIPLAYER_SESSION,
+  transport,
 }: GameScreenProps) {
   const theme = useGameTheme();
   const MatchOverlay = theme.renderers.MatchOverlay;
   const insets = useSafeAreaInsets();
   const canvasSize = useSharedValue<CanvasSize>({ width: 0, height: 0 });
-  const topPaddle = usePaddleState('top', canvasSize, insets.top);
-  const bottomPaddle = usePaddleState('bottom', canvasSize, insets.bottom);
-  const { ball, countdown, lastImpact, match, restartMatch } = useGameLoop({
-    canvasSize,
-    topPaddle,
-    bottomPaddle,
-  });
+  const paddles = useSessionPaddles(canvasSize, insets);
+  const { ball, countdown, lastImpact, match, restartMatch, simulationTick } =
+    useGameLoop({
+      canvasSize,
+      topPaddle: paddles.top,
+      bottomPaddle: paddles.bottom,
+    });
+  usePaddleHitHaptics(lastImpact, session);
   const ballPresentation = useBallPresentation(ball, lastImpact);
   const controlsEnabled = match.phase.type !== 'match-ended';
-  const topPaddleGesture = usePaddleControl(canvasSize, topPaddle, {
+  const sendLocalInput = useCallback(
+    (input: PaddleInput) => {
+      transport?.send(input);
+    },
+    [transport],
+  );
+  const controls = useSessionControls({
+    session,
+    canvasSize,
+    paddles,
+    simulationTick,
     enabled: controlsEnabled,
-  });
-  const bottomPaddleGesture = usePaddleControl(canvasSize, bottomPaddle, {
-    enabled: controlsEnabled,
-    simultaneousWith: topPaddleGesture,
+    onLocalInput:
+      session.mode === 'online-multiplayer' && transport
+        ? sendLocalInput
+        : undefined,
   });
   const geometry = useGameGeometry({
     canvasSize,
-    topPaddle,
-    bottomPaddle,
+    topPaddle: paddles.top,
+    bottomPaddle: paddles.bottom,
     ball,
     ballPresentation,
   });
@@ -57,8 +71,8 @@ export function GameScreen({
     <View style={{ flex: 1, backgroundColor: theme.palette.arena }}>
       <GameScene canvasSize={canvasSize} {...geometry} />
       <PlayerControlZones
-        topGesture={topPaddleGesture}
-        bottomGesture={bottomPaddleGesture}
+        topGesture={controls.top}
+        bottomGesture={controls.bottom}
       />
       <MatchOverlay
         match={match}

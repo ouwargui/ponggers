@@ -5,7 +5,7 @@ import {
   PADDLE_VELOCITY_HALF_LIFE_SECONDS,
   PADDLE_WIDTH_RATIO,
 } from '@/game/constants';
-import type { PaddleState, PlayerId } from '@/game/engine/types';
+import type { PaddleInput, PaddleState, PlayerId } from '@/game/engine/types';
 
 export function createPaddle(id: PlayerId): PaddleState {
   'worklet';
@@ -55,6 +55,31 @@ export function resetPaddleForMatch(paddle: PaddleState): PaddleState {
     centerX: initialPaddle.centerX,
     width: initialPaddle.width,
     velocityX: initialPaddle.velocityX,
+  };
+}
+
+export function applyPaddleInput(
+  paddle: PaddleState,
+  input: PaddleInput,
+): PaddleState {
+  'worklet';
+
+  if (input.playerId !== paddle.id) {
+    return paddle;
+  }
+
+  const halfPaddleWidth = paddle.width / 2;
+  const centerX = Number.isFinite(input.centerX)
+    ? Math.max(halfPaddleWidth, Math.min(input.centerX, 1 - halfPaddleWidth))
+    : paddle.centerX;
+  const velocityX = Number.isFinite(input.velocityX)
+    ? input.velocityX
+    : paddle.velocityX;
+
+  return {
+    ...paddle,
+    centerX,
+    velocityX,
   };
 }
 

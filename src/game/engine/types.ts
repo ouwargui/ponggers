@@ -120,5 +120,6 @@ export type PaddleInput = {
   playerId: PlayerId;
   sequence: number;
   centerX: number;
+  velocityX: number;
   clientTick: number;
 };

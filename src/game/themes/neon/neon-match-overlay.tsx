@@ -18,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import type { PlayerId } from '@/game/engine/types';
-import type { HudOrientation } from '@/game/session-config';
+import type { HudOrientation } from '@/game/session/definition';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type { MatchOverlayRendererProps } from '@/game/themes/types';
 

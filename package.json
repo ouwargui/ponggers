@@ -8,6 +8,7 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "test": "bun test",
     "check": "bunx --bun @biomejs/biome check --write",
     "format": "bunx --bun @biomejs/biome format --write",
     "lint": "bunx --bun @biomejs/biome lint --write"
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.3",
+    "@types/bun": "^1.3.14",
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },

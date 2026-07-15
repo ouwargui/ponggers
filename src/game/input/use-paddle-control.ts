@@ -4,16 +4,25 @@ import {
   useAnimatedReaction,
   useSharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
-import { createPaddle, layoutPaddle } from '@/game/engine/paddle';
-import type { PaddleState, PlayerId } from '@/game/engine/types';
+import { PADDLE_INPUT_SEND_INTERVAL_TICKS } from '@/game/constants';
+import {
+  applyPaddleInput,
+  createPaddle,
+  layoutPaddle,
+} from '@/game/engine/paddle';
+import type { PaddleInput, PaddleState, PlayerId } from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
+import { createPaddleInput, shouldSendPaddleInput } from '@/game/session/input';
 
 export type PaddleRuntimeState = SharedValue<PaddleState>;
 
 type PaddleControlOptions = {
   enabled?: boolean;
+  onInput?: (input: PaddleInput) => void;
   simultaneousWith?: PanGesture;
+  simulationTick: SharedValue<number>;
 };
 
 export function usePaddleState(
@@ -50,8 +59,16 @@ export function usePaddleState(
 export function usePaddleControl(
   canvasSize: SharedValue<CanvasSize>,
   paddle: PaddleRuntimeState,
-  { enabled = true, simultaneousWith }: PaddleControlOptions = {},
+  {
+    enabled = true,
+    onInput,
+    simultaneousWith,
+    simulationTick,
+  }: PaddleControlOptions,
 ): PanGesture {
+  const inputSequence = useSharedValue(0);
+  const lastSentTick = useSharedValue(-PADDLE_INPUT_SEND_INTERVAL_TICKS);
+
   return usePanGesture({
     enabled,
     minDistance: 0,
@@ -67,17 +84,26 @@ export function usePaddleControl(
       }
 
       const currentPaddle = paddle.value;
-      const halfPaddleWidth = currentPaddle.width / 2;
       const nextX = currentPaddle.centerX + event.changeX / width;
-
-      paddle.value = {
-        ...currentPaddle,
-        centerX: Math.max(
-          halfPaddleWidth,
-          Math.min(nextX, 1 - halfPaddleWidth),
-        ),
+      const nextSequence = inputSequence.value + 1;
+      const input = createPaddleInput({
+        playerId: currentPaddle.id,
+        sequence: nextSequence,
+        centerX: nextX,
         velocityX: event.velocityX / width,
-      };
+        clientTick: simulationTick.value,
+      });
+
+      inputSequence.value = nextSequence;
+      paddle.value = applyPaddleInput(currentPaddle, input);
+
+      if (
+        onInput &&
+        shouldSendPaddleInput(input.clientTick, lastSentTick.value)
+      ) {
+        lastSentTick.value = input.clientTick;
+        scheduleOnRN(onInput, input);
+      }
     },
   });
 }

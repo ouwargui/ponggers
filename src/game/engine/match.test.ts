@@ -1,7 +1,4 @@
-/// <reference types="node" />
-
-import assert from 'node:assert/strict';
-import { describe, test } from 'node:test';
+import { describe, expect, test } from 'bun:test';
 
 import {
   MATCH_OPENING_COUNTDOWN_FROM,
@@ -47,7 +44,7 @@ describe('match lifecycle', () => {
     const startTick = 240;
     const match = createInitialMatchState(startTick, 'top');
 
-    assert.deepEqual(match.phase, {
+    expect(match.phase).toEqual({
       type: 'countdown',
       startedAtTick: startTick,
       endsAtTick:
@@ -57,11 +54,10 @@ describe('match lifecycle', () => {
       stepDurationTicks: MATCH_OPENING_COUNTDOWN_STEP_TICKS,
       serveToward: 'top',
     });
-    assert.equal(getCountdownValue(match, startTick), 3);
-    assert.equal(
+    expect(getCountdownValue(match, startTick)).toBe(3);
+    expect(
       getCountdownValue(match, startTick + MATCH_OPENING_COUNTDOWN_STEP_TICKS),
-      2,
-    );
+    ).toBe(2);
   });
 
   test('moves from countdown to playing', () => {
@@ -70,9 +66,9 @@ describe('match lifecycle', () => {
       MATCH_OPENING_COUNTDOWN_FROM * MATCH_OPENING_COUNTDOWN_STEP_TICKS;
     const playing = advanceMatchPhase(match, countdownTicks);
 
-    assert.deepEqual(playing.phase, { type: 'playing' });
-    assert.equal(playing.rallyStartedAtTick, countdownTicks);
-    assert.equal(getCountdownValue(playing, countdownTicks), null);
+    expect(playing.phase).toEqual({ type: 'playing' });
+    expect(playing.rallyStartedAtTick).toBe(countdownTicks);
+    expect(getCountdownValue(playing, countdownTicks)).toBeNull();
   });
 
   test('records a point, pauses, and serves toward the player who conceded', () => {
@@ -82,8 +78,8 @@ describe('match lifecycle', () => {
       createGoal('top', 'bottom', goalTick),
     );
 
-    assert.deepEqual(pointScored.score, { top: 1, bottom: 0 });
-    assert.deepEqual(pointScored.phase, {
+    expect(pointScored.score).toEqual({ top: 1, bottom: 0 });
+    expect(pointScored.phase).toEqual({
       type: 'point-scored',
       scorer: 'top',
       concededBy: 'bottom',
@@ -95,7 +91,7 @@ describe('match lifecycle', () => {
       goalTick + MATCH_POINT_PAUSE_TICKS,
     );
 
-    assert.deepEqual(countdown.phase, {
+    expect(countdown.phase).toEqual({
       type: 'countdown',
       startedAtTick: goalTick + MATCH_POINT_PAUSE_TICKS,
       endsAtTick:
@@ -114,8 +110,8 @@ describe('match lifecycle', () => {
       createGoal('bottom', 'top', 100),
     );
 
-    assert.deepEqual(ended.score, { top: 0, bottom: 1 });
-    assert.deepEqual(ended.phase, { type: 'match-ended', winner: 'bottom' });
-    assert.equal(advanceMatchPhase(ended, 1_000), ended);
+    expect(ended.score).toEqual({ top: 0, bottom: 1 });
+    expect(ended.phase).toEqual({ type: 'match-ended', winner: 'bottom' });
+    expect(advanceMatchPhase(ended, 1_000)).toBe(ended);
   });
 });

@@ -5,6 +5,7 @@ export const PADDLE_MAX_BOUNCE_ANGLE = Math.PI / 3;
 export const PADDLE_VELOCITY_INFLUENCE = 0.18;
 export const PADDLE_VELOCITY_HALF_LIFE_SECONDS = 0.1;
 export const PADDLE_VELOCITY_EPSILON = 0.01;
+export const PADDLE_INPUT_SEND_RATE = 30;
 
 export const BALL_RADIUS_RATIO = 0.035;
 export const BALL_SERVE_VELOCITY_X = 0.32;
@@ -13,6 +14,10 @@ export const BALL_SPEED_UP_PER_PADDLE_HIT = 1.07;
 export const BALL_IMPACT_REFERENCE_SPEED = 1.5;
 
 export const GAME_TICK_RATE = 120;
+export const PADDLE_INPUT_SEND_INTERVAL_TICKS = Math.max(
+  1,
+  Math.round(GAME_TICK_RATE / PADDLE_INPUT_SEND_RATE),
+);
 export const MAX_FRAME_TIME_SECONDS = 0.1;
 export const MATCH_WINNING_SCORE = 5;
 export const MATCH_POINT_PAUSE_TICKS = Math.round(GAME_TICK_RATE * 0.65);
