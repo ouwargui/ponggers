@@ -1,19 +1,16 @@
-import type { ComponentProps } from 'react';
 import { View } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
-
-type GestureType = ComponentProps<typeof GestureDetector>['gesture'];
+import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 
 type PlayerControlZonesProps = {
-  topGesture: GestureType;
-  bottomGesture: GestureType;
+  topGesture: PanGesture;
+  bottomGesture: PanGesture;
 };
 
 function ControlZone({
   gesture,
   testID,
 }: {
-  gesture: GestureType;
+  gesture: PanGesture;
   testID: string;
 }) {
   return (

@@ -1,4 +1,4 @@
-import { Gesture } from 'react-native-gesture-handler';
+import { type PanGesture, usePanGesture } from 'react-native-gesture-handler';
 import {
   type SharedValue,
   useAnimatedReaction,
@@ -45,11 +45,15 @@ export function usePaddleState(
 export function usePaddleControl(
   canvasSize: SharedValue<CanvasSize>,
   paddle: PaddleRuntimeState,
-) {
-  return Gesture.Pan()
-    .minDistance(0)
-    .shouldCancelWhenOutside(false)
-    .onChange((event) => {
+  simultaneousWith?: PanGesture,
+): PanGesture {
+  return usePanGesture({
+    minDistance: 0,
+    shouldCancelWhenOutside: false,
+    simultaneousWith,
+    onUpdate: (event) => {
+      'worklet';
+
       const width = canvasSize.value.width;
 
       if (width <= 0) {
@@ -68,5 +72,6 @@ export function usePaddleControl(
         ),
         velocityX: event.velocityX / width,
       };
-    });
+    },
+  });
 }

@@ -28,9 +28,11 @@ export function GameScreen() {
   });
   const ballPresentation = useBallPresentation(ball, lastImpact);
   const topPaddleGesture = usePaddleControl(canvasSize, topPaddle);
-  const bottomPaddleGesture = usePaddleControl(canvasSize, bottomPaddle);
-  topPaddleGesture.simultaneousWithExternalGesture(bottomPaddleGesture);
-  bottomPaddleGesture.simultaneousWithExternalGesture(topPaddleGesture);
+  const bottomPaddleGesture = usePaddleControl(
+    canvasSize,
+    bottomPaddle,
+    topPaddleGesture,
+  );
   const geometry = useGameGeometry({
     canvasSize,
     topPaddle,
