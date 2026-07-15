@@ -25,6 +25,7 @@ import type {
 import { OnlineMatchConnection } from '@/game/session/online-match-connection';
 import { getSignalingServerUrl } from '@/game/session/signaling-server-url';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
+import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 
 type LobbyMode = 'menu' | 'join';
 
@@ -337,17 +338,34 @@ function LobbyButton({
   label: string;
   onPress: () => void;
 }) {
+  const { palette } = useGameTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        { opacity: disabled ? 0.25 : pressed ? 0.55 : 1 },
-      ]}
+      style={styles.button}
     >
-      <Text style={[styles.buttonText, { color }]}>{label}</Text>
+      {({ pressed }) => {
+        const textColor = pressed ? palette.players.bottom.glow : color;
+
+        return (
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: textColor,
+                opacity: disabled ? 0.25 : pressed ? 0.75 : 1,
+                transform: [{ scale: pressed ? 1.04 : 1 }],
+              },
+              neonTextGlow(textColor, pressed ? 14 : 3),
+            ]}
+          >
+            {label}
+          </Text>
+        );
+      }}
     </Pressable>
   );
 }

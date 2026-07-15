@@ -14,6 +14,7 @@ import Animated, { FadeIn, useSharedValue } from 'react-native-reanimated';
 
 import type { CanvasSize } from '@/game/rendering/types';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
+import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 
 type MenuButtonProps = {
   accessibilityHint: string;
@@ -44,22 +45,24 @@ function MenuButton({ accessibilityHint, href, label }: MenuButtonProps) {
     >
       {({ pressed }) => {
         const color = pressed ? palette.players.bottom.glow : palette.ball.core;
+        const glowColor = pressed
+          ? palette.players.bottom.glow
+          : palette.ball.glow;
+        const glowRadius = pressed ? 14 : 3;
 
         return (
           <Text
-            style={{
-              color,
-              textAlign: 'center',
-              fontSize: 26,
-              fontWeight: '800',
-              letterSpacing: 4,
-              textShadowColor: pressed
-                ? palette.players.bottom.glow
-                : palette.ball.glow,
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: pressed ? 14 : 3,
-              transform: [{ scale: pressed ? 1.04 : 1 }],
-            }}
+            style={[
+              {
+                color,
+                textAlign: 'center',
+                fontSize: 26,
+                fontWeight: '800',
+                letterSpacing: 4,
+                transform: [{ scale: pressed ? 1.04 : 1 }],
+              },
+              neonTextGlow(glowColor, glowRadius),
+            ]}
           >
             {label}
           </Text>
