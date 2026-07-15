@@ -19,6 +19,8 @@ export type SceneBall = {
   centerX: SharedValue<number>;
   centerY: SharedValue<number>;
   radius: SharedValue<number>;
+  scaleX: SharedValue<number>;
+  scaleY: SharedValue<number>;
   color: string;
 };
 

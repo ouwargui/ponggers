@@ -1,4 +1,5 @@
 import {
+  BALL_IMPACT_REFERENCE_SPEED,
   PADDLE_MAX_BOUNCE_ANGLE,
   PADDLE_VELOCITY_INFLUENCE,
 } from '@/game/constants';
@@ -18,6 +19,23 @@ export type PaddleHit = {
   paddle: PaddleState;
   time: number;
 };
+
+export function getBallImpactIntensity(
+  ball: BallState,
+  ballShape: BallCollisionShape,
+): number {
+  'worklet';
+
+  if (ballShape.radiusY <= 0) {
+    return 0;
+  }
+
+  const heightToWidthRatio = ballShape.radiusX / ballShape.radiusY;
+  const velocityYInWidthUnits = ball.velocity.y * heightToWidthRatio;
+  const speed = Math.hypot(ball.velocity.x, velocityYInWidthUnits);
+
+  return Math.max(0, Math.min(speed / BALL_IMPACT_REFERENCE_SPEED, 1));
+}
 
 export function findPaddleHit(
   ball: BallState,

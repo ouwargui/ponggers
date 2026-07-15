@@ -12,7 +12,11 @@ import {
 import { decayPaddleVelocity } from '@/game/engine/paddle';
 import { createServe } from '@/game/engine/serve';
 import { stepBall } from '@/game/engine/simulation';
-import type { BallState, PaddleState } from '@/game/engine/types';
+import type {
+  BallImpactEvent,
+  BallState,
+  PaddleState,
+} from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
 
 const FIXED_STEP_SECONDS = 1 / GAME_TICK_RATE;
@@ -29,6 +33,8 @@ export function useGameLoop({
   bottomPaddle,
 }: GameLoopOptions) {
   const ball = useSharedValue<BallState>(createServe());
+  const lastImpact = useSharedValue<BallImpactEvent | null>(null);
+  const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
 
   useFrameCallback(({ timeSincePreviousFrame }) => {
@@ -52,6 +58,8 @@ export function useGameLoop({
     let nextBall = ball.value;
     let nextTopPaddle = topPaddle.value;
     let nextBottomPaddle = bottomPaddle.value;
+    let nextTick = simulationTick.value;
+    let nextImpact: BallImpactEvent | null = null;
     let didStep = false;
     const ballShape = {
       radiusX: BALL_RADIUS_RATIO,
@@ -59,14 +67,23 @@ export function useGameLoop({
     };
 
     while (accumulatedTime.value >= FIXED_STEP_SECONDS) {
-      nextBall = stepBall(
+      nextTick += 1;
+
+      const stepResult = stepBall(
         nextBall,
         {
           ballShape,
           paddles: [nextTopPaddle, nextBottomPaddle],
         },
         FIXED_STEP_SECONDS,
+        nextTick,
       );
+      nextBall = stepResult.ball;
+
+      if (stepResult.impact) {
+        nextImpact = stepResult.impact;
+      }
+
       nextTopPaddle = decayPaddleVelocity(nextTopPaddle, FIXED_STEP_SECONDS);
       nextBottomPaddle = decayPaddleVelocity(
         nextBottomPaddle,
@@ -78,6 +95,11 @@ export function useGameLoop({
 
     if (didStep) {
       ball.value = nextBall;
+      simulationTick.value = nextTick;
+
+      if (nextImpact) {
+        lastImpact.value = nextImpact;
+      }
 
       if (nextTopPaddle.velocityX !== topPaddle.value.velocityX) {
         topPaddle.value = nextTopPaddle;
@@ -89,5 +111,5 @@ export function useGameLoop({
     }
   });
 
-  return { ball };
+  return { ball, lastImpact };
 }

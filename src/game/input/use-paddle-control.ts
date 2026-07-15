@@ -48,6 +48,7 @@ export function usePaddleControl(
 ) {
   return Gesture.Pan()
     .minDistance(0)
+    .shouldCancelWhenOutside(false)
     .onChange((event) => {
       const width = canvasSize.value.width;
 

@@ -4,6 +4,7 @@ import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { BALL_RADIUS_RATIO, colors } from '@/game/constants';
 import { PRIMARY_BALL_ID } from '@/game/engine/serve';
 import type { BallState, PaddleState } from '@/game/engine/types';
+import type { BallPresentationState } from '@/game/presentation/use-ball-presentation';
 import type { CanvasSize, GameGeometry } from '@/game/rendering/types';
 
 type GameGeometryOptions = {
@@ -11,6 +12,7 @@ type GameGeometryOptions = {
   topPaddle: SharedValue<PaddleState>;
   bottomPaddle: SharedValue<PaddleState>;
   ball: SharedValue<BallState>;
+  ballPresentation: BallPresentationState;
 };
 
 function usePaddleRect(
@@ -46,6 +48,7 @@ export function useGameGeometry({
   topPaddle,
   bottomPaddle,
   ball,
+  ballPresentation,
 }: GameGeometryOptions): GameGeometry {
   const centerLine = useDerivedValue(() =>
     rect(0, canvasSize.value.height / 2 - 1, canvasSize.value.width, 2),
@@ -76,6 +79,8 @@ export function useGameGeometry({
         centerX: ballCenterX,
         centerY: ballCenterY,
         radius: ballRadius,
+        scaleX: ballPresentation.scaleX,
+        scaleY: ballPresentation.scaleY,
         color: colors.foreground,
       },
     ],

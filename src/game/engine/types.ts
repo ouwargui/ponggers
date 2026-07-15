@@ -24,6 +24,17 @@ export type BallState = {
   velocity: Vector2;
 };
 
+export type BallImpactEvent = {
+  type: 'ball-impact';
+  ballId: EntityId;
+  surface: 'paddle' | 'wall';
+  normal: Vector2;
+  intensity: number;
+  tick: number;
+};
+
+export type GameEvent = BallImpactEvent;
+
 export type SpecialEffect =
   | {
       type: 'speed-ball';
