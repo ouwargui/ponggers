@@ -37,6 +37,23 @@ encrypted Worker secrets alongside the code. Wrangler also declares them as
 required, so deployment fails instead of producing a broken Worker when either
 one is missing.
 
+### GitHub Actions
+
+The `Deploy signaling Worker` workflow verifies and deploys the Worker after a
+relevant change is pushed to `main`. It can also be started manually from the
+Actions tab. The workflow installs Bun canary explicitly and uses the Wrangler
+version pinned by this repository.
+
+Add these repository or GitHub environment secrets before running it:
+
+- `CLOUDFLARE_API_TOKEN`: a scoped Cloudflare token that can edit Workers.
+- `CLOUDFLARE_ACCOUNT_ID`: the account that owns the Worker and TURN key.
+- `TURN_KEY_ID`: the Cloudflare Realtime TURN key ID.
+- `TURN_KEY_API_TOKEN`: the matching Realtime TURN API token.
+
+The TURN values are uploaded as encrypted Worker secrets; they are never
+written to the repository or printed by the workflow.
+
 `TURN_CREDENTIAL_TTL_SECONDS` is a plain Worker variable in `wrangler.jsonc`
 and defaults to 3600 seconds.
 
