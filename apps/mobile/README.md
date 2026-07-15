@@ -53,3 +53,24 @@ bun test
 bunx tsc --noEmit
 bun --filter @ponggers/signaling typecheck
 ```
+
+## Production iOS release
+
+The `Build and submit mobile app` GitHub workflow runs after relevant changes
+land on `main`, or manually from the Actions tab. It installs the monorepo from
+the root with Bun, runs the test and typecheck suites, then runs EAS CLI from
+`apps/mobile` as required for a monorepo project. A successful production build
+is submitted to TestFlight automatically.
+
+Add an `EXPO_TOKEN` secret to the GitHub `production` environment. The EAS
+project's `production` environment must also define the public runtime values,
+including:
+
+```text
+EXPO_PUBLIC_SIGNALING_URL=wss://your-production-worker.example/ws
+EXPO_PUBLIC_FORCE_TURN_RELAY=false
+```
+
+Before relying on non-interactive CI, complete one successful production iOS
+build locally so EAS has the Apple signing credentials and App Store Connect
+application information it needs.
