@@ -49,6 +49,7 @@ export type MatchOverlayRendererProps = {
   localPlayerId: PlayerId | null;
   topInset: number;
   bottomInset: number;
+  hapticsEnabled: boolean;
   onRematch: () => void;
 };
 

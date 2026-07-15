@@ -343,6 +343,7 @@ export function NeonMatchOverlay({
   localPlayerId,
   topInset,
   bottomInset,
+  hapticsEnabled,
   onRematch,
 }: MatchOverlayRendererProps) {
   const backdropOpacity = useSharedValue(
@@ -361,7 +362,7 @@ export function NeonMatchOverlay({
   }, [backdropOpacity, match.phase.type]);
 
   useEffect(() => {
-    if (countdown === null) {
+    if (!hapticsEnabled || countdown === null) {
       return;
     }
 
@@ -370,15 +371,19 @@ export function NeonMatchOverlay({
         ? Haptics.ImpactFeedbackStyle.Medium
         : Haptics.ImpactFeedbackStyle.Light,
     );
-  }, [countdown]);
+  }, [countdown, hapticsEnabled]);
 
   useEffect(() => {
+    if (!hapticsEnabled) {
+      return;
+    }
+
     if (match.phase.type === 'point-scored') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else if (match.phase.type === 'match-ended') {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
-  }, [match.phase.type]);
+  }, [hapticsEnabled, match.phase.type]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,

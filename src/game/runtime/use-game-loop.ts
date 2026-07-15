@@ -8,6 +8,7 @@ import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import {
   BALL_RADIUS_RATIO,
+  GAME_SNAPSHOT_SEND_INTERVAL_TICKS,
   GAME_TICK_RATE,
   MAX_FRAME_TIME_SECONDS,
 } from '@/game/constants';
@@ -23,10 +24,17 @@ import { stepBall } from '@/game/engine/simulation';
 import type {
   BallImpactEvent,
   BallState,
+  MatchPhase,
   MatchState,
   PaddleState,
 } from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
+import {
+  applyReplicaPaddle,
+  createGameSnapshotMessage,
+  type GameSnapshotMessage,
+  interpolateReplicaBall,
+} from '@/game/session/snapshot';
 
 const FIXED_STEP_SECONDS = 1 / GAME_TICK_RATE;
 
@@ -34,6 +42,8 @@ type GameLoopOptions = {
   canvasSize: SharedValue<CanvasSize>;
   topPaddle: SharedValue<PaddleState>;
   bottomPaddle: SharedValue<PaddleState>;
+  isAuthoritative?: boolean;
+  onAuthoritativeSnapshot?: (snapshot: GameSnapshotMessage) => void;
 };
 
 type GameLoopSnapshot = {
@@ -41,10 +51,69 @@ type GameLoopSnapshot = {
   countdown: number | null;
 };
 
+function areMatchSnapshotsEqual(left: MatchState, right: MatchState) {
+  return (
+    left.score.top === right.score.top &&
+    left.score.bottom === right.score.bottom &&
+    left.winningScore === right.winningScore &&
+    left.rallyStartedAtTick === right.rallyStartedAtTick &&
+    areMatchPhasesEqual(left.phase, right.phase)
+  );
+}
+
+function areMatchPhasesEqual(left: MatchPhase, right: MatchPhase) {
+  if (left.type !== right.type) {
+    return false;
+  }
+
+  switch (left.type) {
+    case 'playing':
+      return true;
+    case 'countdown':
+      return (
+        right.type === 'countdown' &&
+        left.startedAtTick === right.startedAtTick &&
+        left.endsAtTick === right.endsAtTick &&
+        left.countFrom === right.countFrom &&
+        left.stepDurationTicks === right.stepDurationTicks &&
+        left.serveToward === right.serveToward
+      );
+    case 'point-scored':
+      return (
+        right.type === 'point-scored' &&
+        left.scorer === right.scorer &&
+        left.concededBy === right.concededBy &&
+        left.endsAtTick === right.endsAtTick
+      );
+    case 'match-ended':
+      return right.type === 'match-ended' && left.winner === right.winner;
+  }
+}
+
+function queueReplicaSnapshot(
+  target: SharedValue<GameSnapshotMessage | null>,
+  match: SharedValue<MatchState>,
+  countdown: SharedValue<number | null>,
+  lastImpact: SharedValue<BallImpactEvent | null>,
+  simulationTick: SharedValue<number>,
+  snapshot: GameSnapshotMessage,
+  nextCountdown: number | null,
+) {
+  'worklet';
+
+  target.value = snapshot;
+  match.value = snapshot.match;
+  countdown.value = nextCountdown;
+  lastImpact.value = snapshot.lastImpact;
+  simulationTick.value = snapshot.tick;
+}
+
 export function useGameLoop({
   canvasSize,
   topPaddle,
   bottomPaddle,
+  isAuthoritative = true,
+  onAuthoritativeSnapshot,
 }: GameLoopOptions) {
   const [snapshot, setSnapshot] = useState<GameLoopSnapshot>(() => {
     const match = createInitialMatchState();
@@ -62,8 +131,46 @@ export function useGameLoop({
   const lastImpact = useSharedValue<BallImpactEvent | null>(null);
   const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
+  const replicaTarget = useSharedValue<GameSnapshotMessage | null>(null);
+
+  const applyAuthoritativeSnapshot = useCallback(
+    (authoritativeSnapshot: GameSnapshotMessage) => {
+      const nextCountdown = getCountdownValue(
+        authoritativeSnapshot.match,
+        authoritativeSnapshot.tick,
+      );
+
+      setSnapshot((currentSnapshot) =>
+        currentSnapshot.countdown === nextCountdown &&
+        areMatchSnapshotsEqual(
+          currentSnapshot.match,
+          authoritativeSnapshot.match,
+        )
+          ? currentSnapshot
+          : {
+              match: authoritativeSnapshot.match,
+              countdown: nextCountdown,
+            },
+      );
+      scheduleOnUI(
+        queueReplicaSnapshot,
+        replicaTarget,
+        match,
+        countdown,
+        lastImpact,
+        simulationTick,
+        authoritativeSnapshot,
+        nextCountdown,
+      );
+    },
+    [countdown, lastImpact, match, replicaTarget, simulationTick],
+  );
 
   const restartMatch = useCallback(() => {
+    if (!isAuthoritative) {
+      return;
+    }
+
     scheduleOnUI(() => {
       'worklet';
 
@@ -84,6 +191,7 @@ export function useGameLoop({
     ball,
     bottomPaddle,
     countdown,
+    isAuthoritative,
     lastImpact,
     match,
     simulationTick,
@@ -106,6 +214,29 @@ export function useGameLoop({
       timeSincePreviousFrame / 1000,
       MAX_FRAME_TIME_SECONDS,
     );
+
+    if (!isAuthoritative) {
+      const target = replicaTarget.value;
+
+      if (!target) {
+        return;
+      }
+
+      ball.value =
+        target.match.phase.type === 'playing'
+          ? interpolateReplicaBall(ball.value, target.ball, frameTimeSeconds)
+          : target.ball;
+      topPaddle.value = applyReplicaPaddle(
+        topPaddle.value,
+        target.paddles.top,
+        frameTimeSeconds,
+      );
+      bottomPaddle.value = {
+        ...bottomPaddle.value,
+        width: target.paddles.bottom.width,
+      };
+      return;
+    }
 
     accumulatedTime.value += frameTimeSeconds;
 
@@ -199,10 +330,28 @@ export function useGameLoop({
       if (nextBottomPaddle.velocityX !== bottomPaddle.value.velocityX) {
         bottomPaddle.value = nextBottomPaddle;
       }
+
+      if (
+        onAuthoritativeSnapshot &&
+        nextTick % GAME_SNAPSHOT_SEND_INTERVAL_TICKS === 0
+      ) {
+        scheduleOnRN(
+          onAuthoritativeSnapshot,
+          createGameSnapshotMessage(
+            nextTick,
+            nextBall,
+            nextTopPaddle,
+            nextBottomPaddle,
+            nextMatch,
+            lastImpact.value,
+          ),
+        );
+      }
     }
   });
 
   return {
+    applyAuthoritativeSnapshot,
     ball,
     countdown: snapshot.countdown,
     lastImpact,

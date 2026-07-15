@@ -1,5 +1,6 @@
 import { Canvas } from '@shopify/react-native-skia';
-import type { ReactNode } from 'react';
+import { type ReactNode, useCallback } from 'react';
+import { type LayoutChangeEvent, View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { CanvasSize, GameGeometry } from '@/game/rendering/types';
@@ -19,21 +20,31 @@ export function GameScene({
 }: GameSceneProps) {
   const theme = useGameTheme();
   const { Arena, Ball, CenterLine, Paddle } = theme.renderers;
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { width, height } = event.nativeEvent.layout;
+
+      canvasSize.value = { width, height };
+    },
+    [canvasSize],
+  );
 
   return (
-    <Canvas style={{ flex: 1 }} onSize={canvasSize}>
-      <Arena canvasSize={canvasSize} />
-      <CenterLine line={centerLine} />
+    <View style={{ flex: 1 }} onLayout={handleLayout}>
+      <Canvas style={{ flex: 1 }}>
+        <Arena canvasSize={canvasSize} />
+        <CenterLine line={centerLine} />
 
-      {children}
+        {children}
 
-      {paddles.map((paddle) => (
-        <Paddle key={paddle.id} paddle={paddle} />
-      ))}
+        {paddles.map((paddle) => (
+          <Paddle key={paddle.id} paddle={paddle} />
+        ))}
 
-      {balls.map((ball) => (
-        <Ball key={ball.id} ball={ball} />
-      ))}
-    </Canvas>
+        {balls.map((ball) => (
+          <Ball key={ball.id} ball={ball} />
+        ))}
+      </Canvas>
+    </View>
   );
 }

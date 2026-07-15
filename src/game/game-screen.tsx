@@ -16,6 +16,8 @@ import {
   LOCAL_MULTIPLAYER_SESSION,
 } from '@/game/session/definition';
 import type { SessionTransport } from '@/game/session/transport';
+import { useAuthoritativeSnapshots } from '@/game/session/use-authoritative-snapshots';
+import { useOnlineRematch } from '@/game/session/use-online-rematch';
 import { useRemotePaddleInput } from '@/game/session/use-remote-paddle-input';
 import { useSessionControls } from '@/game/session/use-session-controls';
 import { useSessionPaddles } from '@/game/session/use-session-paddles';
@@ -25,11 +27,13 @@ import { useGameTheme } from '@/game/themes/game-theme-provider';
 type GameScreenProps = {
   session?: GameSessionDefinition;
   transport?: SessionTransport;
+  hapticsEnabled?: boolean;
 };
 
 export function GameScreen({
   session = LOCAL_MULTIPLAYER_SESSION,
   transport,
+  hapticsEnabled = true,
 }: GameScreenProps) {
   const theme = useGameTheme();
   const MatchOverlay = theme.renderers.MatchOverlay;
@@ -37,18 +41,46 @@ export function GameScreen({
   const insets = useSafeAreaInsets();
   const canvasSize = useSharedValue<CanvasSize>({ width: 0, height: 0 });
   const paddles = useSessionPaddles(canvasSize, insets);
-  useRemotePaddleInput({ session, transport, paddles });
+  const isOnlineHost =
+    session.mode === 'online-multiplayer' && session.onlineRole === 'host';
+  const isOnlineGuest =
+    session.mode === 'online-multiplayer' && session.onlineRole === 'guest';
+  const sendAuthoritativeSnapshot = useCallback(
+    (snapshot: Parameters<SessionTransport['send']>[0]) => {
+      transport?.send(snapshot);
+    },
+    [transport],
+  );
+  const gameLoop = useGameLoop({
+    canvasSize,
+    topPaddle: paddles.top,
+    bottomPaddle: paddles.bottom,
+    isAuthoritative: !isOnlineGuest,
+    onAuthoritativeSnapshot:
+      isOnlineHost && transport ? sendAuthoritativeSnapshot : undefined,
+  });
+  useRemotePaddleInput({
+    session,
+    transport: isOnlineHost ? transport : undefined,
+    paddles,
+  });
+  useAuthoritativeSnapshots({
+    enabled: isOnlineGuest,
+    transport,
+    onSnapshot: gameLoop.applyAuthoritativeSnapshot,
+  });
   const latencyMs = useTransportLatency(
     session.mode === 'online-multiplayer' ? transport : undefined,
   );
   const latencyPlayer = getLatencyIndicatorPlayer(session);
   const { ball, countdown, lastImpact, match, restartMatch, simulationTick } =
-    useGameLoop({
-      canvasSize,
-      topPaddle: paddles.top,
-      bottomPaddle: paddles.bottom,
-    });
-  usePaddleHitHaptics(lastImpact, session);
+    gameLoop;
+  const handleRematch = useOnlineRematch({
+    session,
+    transport,
+    restartMatch,
+  });
+  usePaddleHitHaptics(lastImpact, session, hapticsEnabled);
   const ballPresentation = useBallPresentation(ball, lastImpact);
   const controlsEnabled = match.phase.type !== 'match-ended';
   const sendLocalInput = useCallback(
@@ -63,10 +95,7 @@ export function GameScreen({
     paddles,
     simulationTick,
     enabled: controlsEnabled,
-    onLocalInput:
-      session.mode === 'online-multiplayer' && transport
-        ? sendLocalInput
-        : undefined,
+    onLocalInput: isOnlineGuest && transport ? sendLocalInput : undefined,
   });
   const geometry = useGameGeometry({
     canvasSize,
@@ -98,7 +127,8 @@ export function GameScreen({
         localPlayerId={session.localPlayerId}
         topInset={insets.top}
         bottomInset={insets.bottom}
-        onRematch={restartMatch}
+        hapticsEnabled={hapticsEnabled}
+        onRematch={handleRematch}
       />
     </View>
   );

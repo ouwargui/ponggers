@@ -24,10 +24,11 @@ function playPaddleHitHaptic(strength: PaddleHitHapticStrength) {
 export function usePaddleHitHaptics(
   lastImpact: SharedValue<BallImpactEvent | null>,
   session: GameSessionDefinition,
+  enabled = true,
 ) {
   const locallyControlledPlayers = {
-    top: session.inputSources.top === 'local',
-    bottom: session.inputSources.bottom === 'local',
+    top: enabled && session.inputSources.top === 'local',
+    bottom: enabled && session.inputSources.bottom === 'local',
   };
 
   useAnimatedReaction(

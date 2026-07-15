@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { GAME_TICK_RATE, PADDLE_INPUT_SEND_RATE } from '@/game/constants';
 import { GameScreen } from '@/game/game-screen';
@@ -27,23 +28,63 @@ export function NetworkLab({ role }: { role: OnlineSessionRole }) {
     }),
   );
 
-  useSimulatedOpponent(transportPair.peerB);
-
   useEffect(() => transportPair.close, [transportPair]);
+
+  return role === 'host' ? (
+    <HostNetworkLab transportPair={transportPair} />
+  ) : (
+    <GuestNetworkLab transportPair={transportPair} />
+  );
+}
+
+type NetworkLabTransportPair = ReturnType<typeof createSimulatedTransportPair>;
+
+function HostNetworkLab({
+  transportPair,
+}: {
+  transportPair: NetworkLabTransportPair;
+}) {
+  useSimulatedOpponent(transportPair.peerB);
+  usePingResponder(transportPair.peerB);
+
+  return (
+    <GameScreen
+      session={ONLINE_MULTIPLAYER_HOST_SESSION}
+      transport={transportPair.peerA}
+    />
+  );
+}
+
+function GuestNetworkLab({
+  transportPair,
+}: {
+  transportPair: NetworkLabTransportPair;
+}) {
+  return (
+    <View style={styles.container}>
+      <View pointerEvents="none" style={styles.hiddenAuthority}>
+        <GameScreen
+          session={ONLINE_MULTIPLAYER_HOST_SESSION}
+          transport={transportPair.peerB}
+          hapticsEnabled={false}
+        />
+      </View>
+      <GameScreen
+        session={ONLINE_MULTIPLAYER_GUEST_SESSION}
+        transport={transportPair.peerA}
+      />
+    </View>
+  );
+}
+
+function usePingResponder(transport: SessionTransport) {
   useEffect(
     () =>
-      transportPair.peerB.subscribe((message) => {
-        respondToPing(transportPair.peerB, message);
+      transport.subscribe((message) => {
+        respondToPing(transport, message);
       }),
-    [transportPair],
+    [transport],
   );
-
-  const session =
-    role === 'host'
-      ? ONLINE_MULTIPLAYER_HOST_SESSION
-      : ONLINE_MULTIPLAYER_GUEST_SESSION;
-
-  return <GameScreen session={session} transport={transportPair.peerA} />;
 }
 
 function useSimulatedOpponent(transport: SessionTransport) {
@@ -83,3 +124,17 @@ function useSimulatedOpponent(transport: SessionTransport) {
     return () => clearInterval(interval);
   }, [transport]);
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  hiddenAuthority: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    opacity: 0,
+  },
+});

@@ -1,4 +1,8 @@
 import type { PaddleInput } from '@/game/engine/types';
+import {
+  type GameSnapshotMessage,
+  parseGameSnapshotMessage,
+} from '@/game/session/snapshot';
 
 export type PingMessage = {
   type: 'ping';
@@ -10,10 +14,26 @@ export type PongMessage = {
   id: number;
 };
 
-export type SessionMessage = PaddleInput | PingMessage | PongMessage;
+export type RematchRequestMessage = {
+  type: 'rematch-request';
+  id: number;
+};
+
+export type SessionMessage =
+  | PaddleInput
+  | PingMessage
+  | PongMessage
+  | RematchRequestMessage
+  | GameSnapshotMessage;
 
 export function cloneSessionMessage(message: SessionMessage): SessionMessage {
-  return { ...message };
+  const clone = decodeSessionMessage(encodeSessionMessage(message));
+
+  if (!clone) {
+    throw new Error('Cannot clone an invalid session message');
+  }
+
+  return clone;
 }
 
 export function encodeSessionMessage(message: SessionMessage): string {
@@ -35,7 +55,11 @@ export function parseSessionMessage(value: unknown): SessionMessage | null {
 
   const message = value as Record<string, unknown>;
 
-  if (message.type === 'ping' || message.type === 'pong') {
+  if (
+    message.type === 'ping' ||
+    message.type === 'pong' ||
+    message.type === 'rematch-request'
+  ) {
     return isNonNegativeInteger(message.id)
       ? { type: message.type, id: message.id }
       : null;
@@ -60,6 +84,10 @@ export function parseSessionMessage(value: unknown): SessionMessage | null {
       velocityX: message.velocityX,
       clientTick: message.clientTick,
     };
+  }
+
+  if (message.type === 'game-snapshot') {
+    return parseGameSnapshotMessage(message);
   }
 
   return null;
