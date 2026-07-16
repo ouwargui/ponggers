@@ -8,18 +8,20 @@ import { useGameTheme } from '@/game/themes/game-theme-provider';
 
 type GameSceneProps = GameGeometry & {
   canvasSize: SharedValue<CanvasSize>;
+  rallyHitCount: SharedValue<number>;
   children?: ReactNode;
 };
 
 export function GameScene({
   canvasSize,
+  rallyHitCount,
   centerLine,
   paddles,
   balls,
   children,
 }: GameSceneProps) {
   const theme = useGameTheme();
-  const { Arena, Ball, CenterLine, Paddle } = theme.renderers;
+  const { Arena, Ball, CenterLine, Paddle, RallyCounter } = theme.renderers;
   const handleLayout = useCallback(
     (event: LayoutChangeEvent) => {
       const { width, height } = event.nativeEvent.layout;
@@ -45,6 +47,8 @@ export function GameScene({
           <Ball key={ball.id} ball={ball} />
         ))}
       </Canvas>
+
+      <RallyCounter hitCount={rallyHitCount} />
     </View>
   );
 }

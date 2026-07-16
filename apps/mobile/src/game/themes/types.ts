@@ -42,6 +42,10 @@ export type BallRendererProps = {
   ball: SceneBall;
 };
 
+export type RallyCounterRendererProps = {
+  hitCount: SharedValue<number>;
+};
+
 export type MatchOverlayRendererProps = {
   match: MatchState;
   countdown: number | null;
@@ -73,6 +77,7 @@ export type GameThemeRenderers = {
   CenterLine: ComponentType<CenterLineRendererProps>;
   Paddle: ComponentType<PaddleRendererProps>;
   Ball: ComponentType<BallRendererProps>;
+  RallyCounter: ComponentType<RallyCounterRendererProps>;
   MatchOverlay: ComponentType<MatchOverlayRendererProps>;
   LatencyIndicator: ComponentType<LatencyIndicatorRendererProps>;
   PauseMenu: ComponentType<PauseMenuRendererProps>;

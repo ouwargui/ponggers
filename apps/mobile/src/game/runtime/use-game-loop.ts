@@ -27,6 +27,7 @@ import {
   recordGoal,
 } from '@/game/engine/match';
 import { decayPaddleVelocity, resetPaddleForMatch } from '@/game/engine/paddle';
+import { recordRallyImpact } from '@/game/engine/rally';
 import { createServe, createWaitingBall } from '@/game/engine/serve';
 import { stepBall } from '@/game/engine/simulation';
 import type {
@@ -74,6 +75,7 @@ function applyRemoteRallyEventOnUI(
   match: SharedValue<MatchState>,
   countdown: SharedValue<number | null>,
   lastImpact: SharedValue<BallImpactEvent | null>,
+  rallyHitCount: SharedValue<number>,
   simulationTick: SharedValue<number>,
   event: RallyEventMessage,
   updateSnapshot: (nextMatch: MatchState, countdown: number | null) => void,
@@ -92,6 +94,7 @@ function applyRemoteRallyEventOnUI(
   if (event.type === 'rally-started') {
     ball.value = event.ball;
     lastImpact.value = null;
+    rallyHitCount.value = 0;
     nextMatch = {
       ...nextMatch,
       phase: { type: 'playing' },
@@ -100,6 +103,7 @@ function applyRemoteRallyEventOnUI(
   } else if (event.type === 'shot-returned') {
     ball.value = event.ball;
     lastImpact.value = event.impact;
+    rallyHitCount.value = nextAuthority.shot;
   } else {
     nextMatch = recordGoal(nextMatch, {
       type: 'goal',
@@ -111,6 +115,7 @@ function applyRemoteRallyEventOnUI(
     });
     ball.value = createWaitingBall();
     lastImpact.value = null;
+    rallyHitCount.value = 0;
   }
 
   const nextCountdown = getCountdownValue(nextMatch, simulationTick.value);
@@ -127,6 +132,7 @@ function applyRemoteMatchStateOnUI(
   match: SharedValue<MatchState>,
   countdown: SharedValue<number | null>,
   lastImpact: SharedValue<BallImpactEvent | null>,
+  rallyHitCount: SharedValue<number>,
   simulationTick: SharedValue<number>,
   state: MatchStateMessage,
   updateSnapshot: (nextMatch: MatchState, countdown: number | null) => void,
@@ -142,6 +148,8 @@ function applyRemoteMatchStateOnUI(
   match.value = state.match;
   countdown.value = nextCountdown;
   lastImpact.value = state.lastImpact;
+  rallyHitCount.value =
+    state.authority.status === 'playing' ? state.authority.shot : 0;
   simulationTick.value = state.tick;
   scheduleOnRN(updateSnapshot, state.match, nextCountdown);
 }
@@ -173,6 +181,7 @@ export function useGameLoop({
   const match = useSharedValue<MatchState>(snapshot.match);
   const countdown = useSharedValue<number | null>(snapshot.countdown);
   const lastImpact = useSharedValue<BallImpactEvent | null>(null);
+  const rallyHitCount = useSharedValue(0);
   const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
   const aiControllerState = useSharedValue<AiControllerState>(
@@ -195,6 +204,7 @@ export function useGameLoop({
         match,
         countdown,
         lastImpact,
+        rallyHitCount,
         simulationTick,
         transformRallyEventForPeer(event),
         updateSnapshot,
@@ -207,6 +217,7 @@ export function useGameLoop({
       match,
       onlineRole,
       rallyAuthority,
+      rallyHitCount,
       simulationTick,
       updateSnapshot,
     ],
@@ -256,6 +267,7 @@ export function useGameLoop({
         match,
         countdown,
         lastImpact,
+        rallyHitCount,
         simulationTick,
         transformMatchStateForPeer(state),
         updateSnapshot,
@@ -269,6 +281,7 @@ export function useGameLoop({
       match,
       onlineRole,
       rallyAuthority,
+      rallyHitCount,
       simulationTick,
       topPaddle,
       updateSnapshot,
@@ -290,6 +303,7 @@ export function useGameLoop({
       ball.value = createWaitingBall();
       countdown.value = nextCountdown;
       lastImpact.value = null;
+      rallyHitCount.value = 0;
       rallyAuthority.value = createInitialRallyAuthority();
       topPaddle.value = resetPaddleForMatch(topPaddle.value);
       bottomPaddle.value = resetPaddleForMatch(bottomPaddle.value);
@@ -306,6 +320,7 @@ export function useGameLoop({
     match,
     onlineRole,
     rallyAuthority,
+    rallyHitCount,
     simulationTick,
     topPaddle,
     updateSnapshot,
@@ -346,6 +361,7 @@ export function useGameLoop({
     let nextTick = simulationTick.value;
     let nextImpact: BallImpactEvent | null = null;
     let nextRallyAuthority = rallyAuthority.value;
+    let nextRallyHitCount = rallyHitCount.value;
     let nextRallyEvent: RallyEventMessage | null = null;
     let didResetBall = false;
     let didStep = false;
@@ -360,6 +376,7 @@ export function useGameLoop({
       ) {
         if (!onlineRole) {
           nextBall = createServe({ vertical: previousPhase.serveToward });
+          nextRallyHitCount = 0;
         } else if (
           nextRallyAuthority.status === 'waiting-for-serve' &&
           nextRallyAuthority.nextServerRole === onlineRole
@@ -380,6 +397,7 @@ export function useGameLoop({
           if (advancedAuthority) {
             nextRallyAuthority = advancedAuthority;
             nextBall = serve;
+            nextRallyHitCount = 0;
             nextRallyEvent = event;
           }
         }
@@ -422,6 +440,13 @@ export function useGameLoop({
         );
         nextBall = stepResult.ball;
 
+        if (!onlineRole) {
+          nextRallyHitCount = recordRallyImpact(
+            nextRallyHitCount,
+            stepResult.impact,
+          );
+        }
+
         if (
           stepResult.impact &&
           (!onlineRole ||
@@ -458,6 +483,7 @@ export function useGameLoop({
 
             nextMatch = recordGoal(nextMatch, stepResult.goal);
             nextBall = createWaitingBall();
+            nextRallyHitCount = 0;
             didResetBall = true;
           } else {
             nextBall = {
@@ -486,6 +512,7 @@ export function useGameLoop({
 
           if (advancedAuthority) {
             nextRallyAuthority = advancedAuthority;
+            nextRallyHitCount = advancedAuthority.shot;
             nextRallyEvent = event;
           }
         }
@@ -510,6 +537,10 @@ export function useGameLoop({
 
       if (nextRallyAuthority !== rallyAuthority.value) {
         rallyAuthority.value = nextRallyAuthority;
+      }
+
+      if (nextRallyHitCount !== rallyHitCount.value) {
+        rallyHitCount.value = nextRallyHitCount;
       }
 
       const didMatchChange = nextMatch !== match.value;
@@ -562,6 +593,7 @@ export function useGameLoop({
     createMatchState,
     lastImpact,
     match: snapshot.match,
+    rallyHitCount,
     restartMatch,
     simulationTick,
   };

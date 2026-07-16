@@ -1,6 +1,7 @@
 import { NeonLatencyIndicator } from '@/game/themes/neon/neon-latency-indicator';
 import { NeonMatchOverlay } from '@/game/themes/neon/neon-match-overlay';
 import { NeonPauseMenu } from '@/game/themes/neon/neon-pause-menu';
+import { NeonRallyCounter } from '@/game/themes/neon/neon-rally-counter';
 import {
   NeonArena,
   NeonBall,
@@ -19,6 +20,7 @@ export const neonTheme = {
     CenterLine: NeonCenterLine,
     Paddle: NeonPaddle,
     Ball: NeonBall,
+    RallyCounter: NeonRallyCounter,
     MatchOverlay: NeonMatchOverlay,
     LatencyIndicator: NeonLatencyIndicator,
     PauseMenu: NeonPauseMenu,

@@ -91,8 +91,15 @@ export function GameScreen({
     session.mode === 'online-multiplayer' ? transport : undefined,
   );
   const latencyPlayer = getLatencyIndicatorPlayer(session);
-  const { ball, countdown, lastImpact, match, restartMatch, simulationTick } =
-    gameLoop;
+  const {
+    ball,
+    countdown,
+    lastImpact,
+    match,
+    rallyHitCount,
+    restartMatch,
+    simulationTick,
+  } = gameLoop;
   const handleRematch = useOnlineRematch({
     session,
     transport,
@@ -126,7 +133,11 @@ export function GameScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.arena }}>
-      <GameScene canvasSize={canvasSize} {...geometry} />
+      <GameScene
+        canvasSize={canvasSize}
+        rallyHitCount={rallyHitCount}
+        {...geometry}
+      />
       <PlayerControlZones
         topGesture={controls.top}
         bottomGesture={controls.bottom}
