@@ -10,7 +10,7 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { useDerivedValue } from 'react-native-reanimated';
-
+import { PADDLE_MAX_GLOW_TRAIL_OFFSET } from '@/game/presentation/paddle-presentation';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type {
   ArenaRendererProps,
@@ -64,13 +64,59 @@ export function NeonCenterLine({ line }: CenterLineRendererProps) {
 
 export function NeonPaddle({ paddle }: PaddleRendererProps) {
   const colors = neonPalette.players[paddle.id];
+  const trailStrength = useDerivedValue(() =>
+    Math.min(
+      Math.abs(paddle.trailOffsetX.value) / PADDLE_MAX_GLOW_TRAIL_OFFSET,
+      1,
+    ),
+  );
+  const nearTrailOpacity = useDerivedValue(() => trailStrength.value * 0.2);
+  const farTrailOpacity = useDerivedValue(() => trailStrength.value * 0.08);
+  const pulseHaloOpacity = useDerivedValue(() =>
+    Math.max(0, Math.min((paddle.glowPulse.value - 1) * 0.5, 0.42)),
+  );
+  const outerGlowOpacity = useDerivedValue(() =>
+    Math.min(0.62, 0.4 * paddle.glowPulse.value),
+  );
+  const innerGlowOpacity = useDerivedValue(() =>
+    Math.min(1, 0.85 * paddle.glowPulse.value),
+  );
 
   return (
     <Group>
-      <RoundedRect rect={paddle.rect} color={colors.glow} opacity={0.4}>
+      <RoundedRect
+        rect={paddle.trailRects[1]}
+        color={colors.glow}
+        opacity={farTrailOpacity}
+      >
+        <BlurMask blur={16} style="normal" />
+      </RoundedRect>
+      <RoundedRect
+        rect={paddle.trailRects[0]}
+        color={colors.glow}
+        opacity={nearTrailOpacity}
+      >
+        <BlurMask blur={10} style="normal" />
+      </RoundedRect>
+      <RoundedRect
+        rect={paddle.glowRect}
+        color={colors.glow}
+        opacity={pulseHaloOpacity}
+      >
+        <BlurMask blur={28} style="normal" />
+      </RoundedRect>
+      <RoundedRect
+        rect={paddle.glowRect}
+        color={colors.glow}
+        opacity={outerGlowOpacity}
+      >
         <BlurMask blur={18} style="normal" />
       </RoundedRect>
-      <RoundedRect rect={paddle.rect} color={colors.glow} opacity={0.85}>
+      <RoundedRect
+        rect={paddle.glowRect}
+        color={colors.glow}
+        opacity={innerGlowOpacity}
+      >
         <BlurMask blur={6} style="normal" />
       </RoundedRect>
       <RoundedRect rect={paddle.rect} color={colors.core} />

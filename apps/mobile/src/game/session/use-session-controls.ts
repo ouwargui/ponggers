@@ -8,6 +8,7 @@ import {
   type GameSessionDefinition,
   isPlayerLocallyControlled,
 } from '@/game/session/definition';
+import type { PaddleInteractionState } from '@/game/session/use-session-paddle-presentations';
 import type { SessionPaddles } from '@/game/session/use-session-paddles';
 
 export type SessionControls = {
@@ -21,6 +22,7 @@ type UseSessionControlsOptions = {
   paddles: SessionPaddles;
   simulationTick: SharedValue<number>;
   enabled: boolean;
+  interactionActive?: PaddleInteractionState;
   onLocalInput?: (input: PaddleInput) => void;
 };
 
@@ -30,15 +32,20 @@ export function useSessionControls({
   paddles,
   simulationTick,
   enabled,
+  interactionActive,
   onLocalInput,
 }: UseSessionControlsOptions): SessionControls {
   const top = usePaddleControl(canvasSize, paddles.top, {
     enabled: enabled && isPlayerLocallyControlled(session, 'top'),
+    interactionActive: interactionActive?.top.active,
+    interactionSequence: interactionActive?.top.updateSequence,
     onInput: onLocalInput,
     simulationTick,
   });
   const bottom = usePaddleControl(canvasSize, paddles.bottom, {
     enabled: enabled && isPlayerLocallyControlled(session, 'bottom'),
+    interactionActive: interactionActive?.bottom.active,
+    interactionSequence: interactionActive?.bottom.updateSequence,
     onInput: onLocalInput,
     simultaneousWith: top,
     simulationTick,

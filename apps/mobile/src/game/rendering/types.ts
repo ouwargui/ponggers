@@ -16,6 +16,10 @@ export type CanvasSize = {
 export type ScenePaddle = {
   id: PlayerId;
   rect: SharedValue<SkRRect>;
+  glowRect: SharedValue<SkRRect>;
+  glowPulse: SharedValue<number>;
+  trailOffsetX: SharedValue<number>;
+  trailRects: [SharedValue<SkRRect>, SharedValue<SkRRect>];
 };
 
 export type SceneBall = {

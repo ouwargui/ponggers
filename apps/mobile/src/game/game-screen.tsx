@@ -25,6 +25,7 @@ import { useOnlineRallyEvents } from '@/game/session/use-online-rally-events';
 import { useOnlineRematch } from '@/game/session/use-online-rematch';
 import { useRemotePaddleInput } from '@/game/session/use-remote-paddle-input';
 import { useSessionControls } from '@/game/session/use-session-controls';
+import { useSessionPaddlePresentations } from '@/game/session/use-session-paddle-presentations';
 import { useSessionPaddles } from '@/game/session/use-session-paddles';
 import { useTransportLatency } from '@/game/session/use-transport-latency';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
@@ -107,6 +108,11 @@ export function GameScreen({
   });
   usePaddleHitHaptics(lastImpact, hapticsEnabled);
   const ballPresentation = useBallPresentation(ball, lastImpact);
+  const paddlePresentations = useSessionPaddlePresentations(
+    session,
+    paddles,
+    lastImpact,
+  );
   const controlsEnabled =
     match.phase.type !== 'match-ended' && !pauseMenu.isOpen;
   const sendLocalInput = useCallback(
@@ -121,6 +127,7 @@ export function GameScreen({
     paddles,
     simulationTick,
     enabled: controlsEnabled,
+    interactionActive: paddlePresentations.interactionActive,
     onLocalInput: isOnline && transport ? sendLocalInput : undefined,
   });
   const geometry = useGameGeometry({
@@ -129,6 +136,7 @@ export function GameScreen({
     bottomPaddle: paddles.bottom,
     ball,
     ballPresentation,
+    paddlePresentation: paddlePresentations.players,
   });
 
   return (

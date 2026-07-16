@@ -20,6 +20,8 @@ export type PaddleRuntimeState = SharedValue<PaddleState>;
 
 type PaddleControlOptions = {
   enabled?: boolean;
+  interactionActive?: SharedValue<boolean>;
+  interactionSequence?: SharedValue<number>;
   onInput?: (input: PaddleInput) => void;
   simultaneousWith?: PanGesture;
   simulationTick: SharedValue<number>;
@@ -61,6 +63,8 @@ export function usePaddleControl(
   paddle: PaddleRuntimeState,
   {
     enabled = true,
+    interactionActive,
+    interactionSequence,
     onInput,
     simultaneousWith,
     simulationTick,
@@ -74,6 +78,13 @@ export function usePaddleControl(
     minDistance: 0,
     shouldCancelWhenOutside: false,
     simultaneousWith,
+    onBegin: () => {
+      'worklet';
+
+      if (interactionActive) {
+        interactionActive.value = true;
+      }
+    },
     onUpdate: (event) => {
       'worklet';
 
@@ -97,12 +108,23 @@ export function usePaddleControl(
       inputSequence.value = nextSequence;
       paddle.value = applyPaddleInput(currentPaddle, input);
 
+      if (interactionSequence) {
+        interactionSequence.value += 1;
+      }
+
       if (
         onInput &&
         shouldSendPaddleInput(input.clientTick, lastSentTick.value)
       ) {
         lastSentTick.value = input.clientTick;
         scheduleOnRN(onInput, input);
+      }
+    },
+    onFinalize: () => {
+      'worklet';
+
+      if (interactionActive) {
+        interactionActive.value = false;
       }
     },
   });
