@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
+import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type { PauseMenuRendererProps } from '@/game/themes/types';
 
@@ -31,27 +32,32 @@ function PauseAction({
         paddingHorizontal: 24,
       }}
     >
-      {({ pressed }) => (
-        <Text
-          style={{
-            color: pressed
-              ? neonPalette.players.bottom.glow
-              : neonPalette.ball.core,
-            textAlign: 'center',
-            fontSize: 22,
-            fontWeight: '800',
-            letterSpacing: 3.5,
-            textShadowColor: pressed
-              ? neonPalette.players.bottom.glow
-              : neonPalette.ball.glow,
-            textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: pressed ? 14 : 3,
-            transform: [{ scale: pressed ? 1.04 : 1 }],
-          }}
-        >
-          {label}
-        </Text>
-      )}
+      {({ pressed }) => {
+        const color = pressed
+          ? neonPalette.players.bottom.glow
+          : neonPalette.ball.core;
+        const glowColor = pressed
+          ? neonPalette.players.bottom.glow
+          : neonPalette.ball.glow;
+
+        return (
+          <Text
+            style={[
+              {
+                color,
+                textAlign: 'center',
+                fontSize: 22,
+                fontWeight: '800',
+                letterSpacing: 3.5,
+                transform: [{ scale: pressed ? 1.04 : 1 }],
+              },
+              neonTextGlow(glowColor, pressed ? 14 : 3),
+            ]}
+          >
+            {label}
+          </Text>
+        );
+      }}
     </Pressable>
   );
 }
@@ -87,18 +93,18 @@ export function NeonPauseMenu({
         >
           {({ pressed }) => (
             <Text
-              style={{
-                color: pressed
-                  ? neonPalette.players.bottom.glow
-                  : neonPalette.ball.core,
-                fontSize: 18,
-                fontWeight: '900',
-                letterSpacing: 1,
-                opacity: pressed ? 1 : 0.55,
-                textShadowColor: neonPalette.players.bottom.glow,
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: pressed ? 12 : 0,
-              }}
+              style={[
+                {
+                  color: pressed
+                    ? neonPalette.players.bottom.glow
+                    : neonPalette.ball.core,
+                  fontSize: 18,
+                  fontWeight: '900',
+                  letterSpacing: 1,
+                  opacity: pressed ? 1 : 0.55,
+                },
+                neonTextGlow(neonPalette.players.bottom.glow, pressed ? 12 : 0),
+              ]}
             >
               Ⅱ
             </Text>
@@ -135,22 +141,23 @@ export function NeonPauseMenu({
           />
 
           <View style={{ width: '100%', maxWidth: 420, gap: 16 }}>
-            <Text
-              accessibilityRole="header"
-              style={{
-                color: neonPalette.players.bottom.glow,
-                paddingBottom: 12,
-                textAlign: 'center',
-                fontSize: 13,
-                fontWeight: '800',
-                letterSpacing: 4,
-                textShadowColor: neonPalette.players.bottom.glow,
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: 10,
-              }}
-            >
-              {freezesSimulation ? 'PAUSED' : 'MATCH MENU'}
-            </Text>
+            <View style={{ paddingBottom: 12, alignItems: 'center' }}>
+              <Text
+                accessibilityRole="header"
+                style={[
+                  {
+                    color: neonPalette.players.bottom.glow,
+                    textAlign: 'center',
+                    fontSize: 13,
+                    fontWeight: '800',
+                    letterSpacing: 4,
+                  },
+                  neonTextGlow(neonPalette.players.bottom.glow, 10),
+                ]}
+              >
+                {freezesSimulation ? 'PAUSED' : 'MATCH MENU'}
+              </Text>
+            </View>
 
             <PauseAction label="RESUME" onPress={onResume} />
             {onQuit ? (

@@ -7,6 +7,15 @@ import {
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import {
+  type AiControllerState,
+  createAiControllerState,
+  stepAiController,
+} from '@/game/ai/ai-controller';
+import {
+  type AiDifficulty,
+  DEFAULT_AI_DIFFICULTY,
+} from '@/game/ai/ai-difficulty';
+import {
   BALL_RADIUS_RATIO,
   GAME_TICK_RATE,
   MAX_FRAME_TIME_SECONDS,
@@ -25,6 +34,7 @@ import type {
   BallState,
   MatchState,
   PaddleState,
+  PlayerId,
 } from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
 import type { OnlineSessionRole } from '@/game/session/definition';
@@ -43,6 +53,8 @@ import {
 const FIXED_STEP_SECONDS = 1 / GAME_TICK_RATE;
 
 type GameLoopOptions = {
+  aiDifficulty?: AiDifficulty;
+  aiPlayerId?: PlayerId | null;
   canvasSize: SharedValue<CanvasSize>;
   topPaddle: SharedValue<PaddleState>;
   bottomPaddle: SharedValue<PaddleState>;
@@ -135,6 +147,8 @@ function applyRemoteMatchStateOnUI(
 }
 
 export function useGameLoop({
+  aiDifficulty = DEFAULT_AI_DIFFICULTY,
+  aiPlayerId = null,
   canvasSize,
   topPaddle,
   bottomPaddle,
@@ -161,6 +175,9 @@ export function useGameLoop({
   const lastImpact = useSharedValue<BallImpactEvent | null>(null);
   const simulationTick = useSharedValue(0);
   const accumulatedTime = useSharedValue(0);
+  const aiControllerState = useSharedValue<AiControllerState>(
+    createAiControllerState(),
+  );
   const rallyAuthority = useSharedValue<RallyAuthorityState>(
     createInitialRallyAuthority(),
   );
@@ -269,6 +286,7 @@ export function useGameLoop({
       const nextCountdown = getCountdownValue(nextMatch, simulationTick.value);
 
       accumulatedTime.value = 0;
+      aiControllerState.value = createAiControllerState();
       ball.value = createWaitingBall();
       countdown.value = nextCountdown;
       lastImpact.value = null;
@@ -280,6 +298,7 @@ export function useGameLoop({
     });
   }, [
     accumulatedTime,
+    aiControllerState,
     ball,
     bottomPaddle,
     countdown,
@@ -320,6 +339,7 @@ export function useGameLoop({
     accumulatedTime.value += frameTimeSeconds;
 
     let nextBall = ball.value;
+    let nextAiControllerState = aiControllerState.value;
     let nextMatch = match.value;
     let nextTopPaddle = topPaddle.value;
     let nextBottomPaddle = bottomPaddle.value;
@@ -362,6 +382,28 @@ export function useGameLoop({
             nextBall = serve;
             nextRallyEvent = event;
           }
+        }
+      }
+
+      if (aiPlayerId) {
+        const aiPaddle =
+          aiPlayerId === 'top' ? nextTopPaddle : nextBottomPaddle;
+        const aiStep = stepAiController({
+          ball: nextBall,
+          ballShape,
+          deltaSeconds: FIXED_STEP_SECONDS,
+          difficulty: aiDifficulty,
+          paddle: aiPaddle,
+          state: nextAiControllerState,
+          tick: nextTick,
+        });
+
+        nextAiControllerState = aiStep.state;
+
+        if (aiPlayerId === 'top') {
+          nextTopPaddle = aiStep.paddle;
+        } else {
+          nextBottomPaddle = aiStep.paddle;
         }
       }
 
@@ -462,6 +504,10 @@ export function useGameLoop({
       ball.value = nextBall;
       simulationTick.value = nextTick;
 
+      if (nextAiControllerState !== aiControllerState.value) {
+        aiControllerState.value = nextAiControllerState;
+      }
+
       if (nextRallyAuthority !== rallyAuthority.value) {
         rallyAuthority.value = nextRallyAuthority;
       }
@@ -488,11 +534,17 @@ export function useGameLoop({
         lastImpact.value = nextImpact;
       }
 
-      if (nextTopPaddle.velocityX !== topPaddle.value.velocityX) {
+      if (
+        nextTopPaddle.centerX !== topPaddle.value.centerX ||
+        nextTopPaddle.velocityX !== topPaddle.value.velocityX
+      ) {
         topPaddle.value = nextTopPaddle;
       }
 
-      if (nextBottomPaddle.velocityX !== bottomPaddle.value.velocityX) {
+      if (
+        nextBottomPaddle.centerX !== bottomPaddle.value.centerX ||
+        nextBottomPaddle.velocityX !== bottomPaddle.value.velocityX
+      ) {
         bottomPaddle.value = nextBottomPaddle;
       }
 

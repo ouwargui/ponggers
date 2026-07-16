@@ -19,7 +19,7 @@ export default function RootLayout() {
   const router = useRouter();
   const [activeLab, setActiveLab] = useState<GameDevLab | null>(null);
   const openEnvironment = useCallback(() => {
-    router.replace('/development/environment' as Href);
+    router.replace('/development/environment');
   }, [router]);
   const openNetworkLab = useCallback((role: OnlineSessionRole) => {
     setActiveLab({ type: 'network', role });
@@ -53,8 +53,10 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="development/environment" />
+          <Stack.Screen name="solo" />
           <Stack.Screen name="online" />
           <Stack.Screen name="game/local" />
+          <Stack.Screen name="game/solo" />
         </Stack>
 
         {__DEV__ && activeLab ? (

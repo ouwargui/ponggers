@@ -2,7 +2,14 @@ import type { BallImpactEvent, PlayerId } from '@/game/engine/types';
 
 export type PaddleHitHapticStrength = 'light' | 'medium' | 'heavy';
 
-export type LocallyControlledPlayers = Record<PlayerId, boolean>;
+export type PaddleHapticPlayers = Record<PlayerId, boolean>;
+
+export function getPaddleHapticPlayers(enabled: boolean): PaddleHapticPlayers {
+  return {
+    top: enabled,
+    bottom: enabled,
+  };
+}
 
 export function getPaddleHitHapticStrength(
   intensity: number,
@@ -23,14 +30,14 @@ export function getPaddleHitHapticStrength(
 export function shouldPlayPaddleHitHaptic(
   impact: BallImpactEvent | null,
   previousImpact: BallImpactEvent | null,
-  locallyControlledPlayers: LocallyControlledPlayers,
+  hapticPlayers: PaddleHapticPlayers,
 ): impact is BallImpactEvent & { playerId: PlayerId } {
   'worklet';
 
   if (
     impact?.surface !== 'paddle' ||
     impact.playerId === null ||
-    !locallyControlledPlayers[impact.playerId]
+    !hapticPlayers[impact.playerId]
   ) {
     return false;
   }

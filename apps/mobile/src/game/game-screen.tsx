@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { AiDifficulty } from '@/game/ai/ai-difficulty';
 import type { PaddleInput } from '@/game/engine/types';
 import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
@@ -13,6 +14,7 @@ import { useGameGeometry } from '@/game/rendering/use-game-geometry';
 import { useGameLoop } from '@/game/runtime/use-game-loop';
 import {
   type GameSessionDefinition,
+  getAiControlledPlayer,
   getLatencyIndicatorPlayer,
   LOCAL_MULTIPLAYER_SESSION,
 } from '@/game/session/definition';
@@ -28,6 +30,7 @@ import { useTransportLatency } from '@/game/session/use-transport-latency';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 
 type GameScreenProps = {
+  aiDifficulty?: AiDifficulty;
   session?: GameSessionDefinition;
   transport?: SessionTransport;
   hapticsEnabled?: boolean;
@@ -35,6 +38,7 @@ type GameScreenProps = {
 };
 
 export function GameScreen({
+  aiDifficulty,
   session = LOCAL_MULTIPLAYER_SESSION,
   transport,
   hapticsEnabled = true,
@@ -49,6 +53,7 @@ export function GameScreen({
   const paddles = useSessionPaddles(canvasSize, insets);
   const pauseMenu = useGamePauseMenu({ session, onQuit });
   const isOnline = session.mode === 'online-multiplayer';
+  const aiPlayerId = getAiControlledPlayer(session);
   const sendRallyEvent = useCallback(
     (event: Parameters<SessionTransport['send']>[0]) => {
       transport?.send(event);
@@ -56,9 +61,11 @@ export function GameScreen({
     [transport],
   );
   const gameLoop = useGameLoop({
+    aiDifficulty,
     canvasSize,
     topPaddle: paddles.top,
     bottomPaddle: paddles.bottom,
+    aiPlayerId,
     onlineRole: isOnline ? session.onlineRole : null,
     onRallyEvent: isOnline && transport ? sendRallyEvent : undefined,
     paused: pauseMenu.simulationPaused,
@@ -91,7 +98,7 @@ export function GameScreen({
     transport,
     restartMatch,
   });
-  usePaddleHitHaptics(lastImpact, session, hapticsEnabled);
+  usePaddleHitHaptics(lastImpact, hapticsEnabled);
   const ballPresentation = useBallPresentation(ball, lastImpact);
   const controlsEnabled =
     match.phase.type !== 'match-ended' && !pauseMenu.isOpen;

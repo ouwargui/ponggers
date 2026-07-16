@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import type { BallImpactEvent } from '@/game/engine/types';
 import {
+  getPaddleHapticPlayers,
   getPaddleHitHapticStrength,
   shouldPlayPaddleHitHaptic,
 } from '@/game/feedback/paddle-hit-haptic-policy';
@@ -23,6 +24,17 @@ function createImpact(
 }
 
 describe('paddle hit haptic policy', () => {
+  test('enables both paddle impacts in every mode', () => {
+    expect(getPaddleHapticPlayers(true)).toEqual({
+      top: true,
+      bottom: true,
+    });
+    expect(getPaddleHapticPlayers(false)).toEqual({
+      top: false,
+      bottom: false,
+    });
+  });
+
   test('plays for both paddles when both are locally controlled', () => {
     const localPlayers = { top: true, bottom: true };
 
@@ -34,7 +46,7 @@ describe('paddle hit haptic policy', () => {
     ).toBe(true);
   });
 
-  test('plays only for the bottom paddle in solo and online ownership', () => {
+  test('plays only for enabled paddle ownership', () => {
     const localPlayers = { top: false, bottom: true };
 
     expect(

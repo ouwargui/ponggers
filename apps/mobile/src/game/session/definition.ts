@@ -74,6 +74,20 @@ export function getRemotelyControlledPlayer(
   return null;
 }
 
+export function getAiControlledPlayer(
+  session: GameSessionDefinition,
+): PlayerId | null {
+  if (session.inputSources.top === 'ai') {
+    return 'top';
+  }
+
+  if (session.inputSources.bottom === 'ai') {
+    return 'bottom';
+  }
+
+  return null;
+}
+
 export function getLatencyIndicatorPlayer(
   session: GameSessionDefinition,
 ): PlayerId | null {

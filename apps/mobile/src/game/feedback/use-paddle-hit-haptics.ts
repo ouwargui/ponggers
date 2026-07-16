@@ -4,11 +4,11 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import type { BallImpactEvent } from '@/game/engine/types';
 import {
+  getPaddleHapticPlayers,
   getPaddleHitHapticStrength,
   type PaddleHitHapticStrength,
   shouldPlayPaddleHitHaptic,
 } from '@/game/feedback/paddle-hit-haptic-policy';
-import type { GameSessionDefinition } from '@/game/session/definition';
 
 function playPaddleHitHaptic(strength: PaddleHitHapticStrength) {
   const style =
@@ -23,24 +23,14 @@ function playPaddleHitHaptic(strength: PaddleHitHapticStrength) {
 
 export function usePaddleHitHaptics(
   lastImpact: SharedValue<BallImpactEvent | null>,
-  session: GameSessionDefinition,
   enabled = true,
 ) {
-  const locallyControlledPlayers = {
-    top: enabled && session.inputSources.top === 'local',
-    bottom: enabled && session.inputSources.bottom === 'local',
-  };
+  const hapticPlayers = getPaddleHapticPlayers(enabled);
 
   useAnimatedReaction(
     () => lastImpact.value,
     (impact, previousImpact) => {
-      if (
-        !shouldPlayPaddleHitHaptic(
-          impact,
-          previousImpact,
-          locallyControlledPlayers,
-        )
-      ) {
+      if (!shouldPlayPaddleHitHaptic(impact, previousImpact, hapticPlayers)) {
         return;
       }
 

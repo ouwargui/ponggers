@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  getAiControlledPlayer,
   getLatencyIndicatorPlayer,
   getRemotelyControlledPlayer,
   isPlayerLocallyControlled,
@@ -24,6 +25,7 @@ describe('game session definitions', () => {
   test('reserves the opponent paddle for AI in solo sessions', () => {
     expect(SOLO_SESSION.inputSources.top).toBe('ai');
     expect(SOLO_SESSION.inputSources.bottom).toBe('local');
+    expect(getAiControlledPlayer(SOLO_SESSION)).toBe('top');
   });
 
   test('reserves the opponent paddle for remote input online', () => {
@@ -34,6 +36,7 @@ describe('game session definitions', () => {
 
   test('has no remote player in local multiplayer', () => {
     expect(getRemotelyControlledPlayer(LOCAL_MULTIPLAYER_SESSION)).toBeNull();
+    expect(getAiControlledPlayer(LOCAL_MULTIPLAYER_SESSION)).toBeNull();
   });
 
   test('shows opponent latency for the host', () => {
