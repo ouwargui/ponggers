@@ -1,7 +1,7 @@
 import { useDeferredSystemGestures } from '@modules/system-gestures';
 import { useCallback } from 'react';
 import { View } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AiDifficulty } from '@/game/ai/ai-difficulty';
 import type { PaddleInput } from '@/game/engine/types';
@@ -9,6 +9,7 @@ import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
 import { useGamePauseMenu } from '@/game/pause/use-game-pause-menu';
 import { useBallPresentation } from '@/game/presentation/use-ball-presentation';
+import { useImpactScreenShake } from '@/game/presentation/use-impact-screen-shake';
 import { GameScene } from '@/game/rendering/game-scene';
 import type { CanvasSize } from '@/game/rendering/types';
 import { useGameGeometry } from '@/game/rendering/use-game-geometry';
@@ -30,6 +31,11 @@ import { useSessionPaddlePresentations } from '@/game/session/use-session-paddle
 import { useSessionPaddles } from '@/game/session/use-session-paddles';
 import { useTransportLatency } from '@/game/session/use-transport-latency';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
+import {
+  EFFECT_LEVEL_MULTIPLIER,
+  type EffectLevel,
+} from '@/settings/game-preferences';
+import { useGamePreferences } from '@/settings/game-preferences-provider';
 
 type GameScreenProps = {
   aiDifficulty?: AiDifficulty;
@@ -48,6 +54,7 @@ export function GameScreen({
 }: GameScreenProps) {
   useDeferredSystemGestures();
   const theme = useGameTheme();
+  const { preferences } = useGamePreferences();
   const MatchOverlay = theme.renderers.MatchOverlay;
   const LatencyIndicator = theme.renderers.LatencyIndicator;
   const PauseMenu = theme.renderers.PauseMenu;
@@ -108,7 +115,16 @@ export function GameScreen({
     transport,
     restartMatch,
   });
-  usePaddleHitHaptics(lastImpact, hapticsEnabled);
+  const hapticsLevel: EffectLevel = hapticsEnabled
+    ? preferences.haptics
+    : 'off';
+  const trailIntensity = EFFECT_LEVEL_MULTIPLIER[preferences.trails];
+  const screenShakeStrength = EFFECT_LEVEL_MULTIPLIER[preferences.screenShake];
+  usePaddleHitHaptics(lastImpact, hapticsLevel);
+  const screenShakeStyle = useImpactScreenShake(
+    lastImpact,
+    screenShakeStrength,
+  );
   const ballPresentation = useBallPresentation(ball, lastImpact);
   const paddlePresentations = useSessionPaddlePresentations(
     session,
@@ -143,11 +159,14 @@ export function GameScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.arena }}>
-      <GameScene
-        canvasSize={canvasSize}
-        rallyHitCount={rallyHitCount}
-        {...geometry}
-      />
+      <Animated.View style={[{ flex: 1 }, screenShakeStyle]}>
+        <GameScene
+          canvasSize={canvasSize}
+          rallyHitCount={rallyHitCount}
+          trailIntensity={trailIntensity}
+          {...geometry}
+        />
+      </Animated.View>
       <PlayerControlZones
         topGesture={controls.top}
         bottomGesture={controls.bottom}
@@ -159,7 +178,7 @@ export function GameScreen({
         localPlayerId={session.localPlayerId}
         topInset={insets.top}
         bottomInset={insets.bottom}
-        hapticsEnabled={hapticsEnabled}
+        hapticsLevel={hapticsLevel}
         onRematch={handleRematch}
       />
       <PauseMenu

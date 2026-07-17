@@ -62,7 +62,7 @@ export function NeonCenterLine({ line }: CenterLineRendererProps) {
   );
 }
 
-export function NeonPaddle({ paddle }: PaddleRendererProps) {
+export function NeonPaddle({ paddle, trailIntensity }: PaddleRendererProps) {
   const colors = neonPalette.players[paddle.id];
   const trailStrength = useDerivedValue(() =>
     Math.min(
@@ -70,8 +70,12 @@ export function NeonPaddle({ paddle }: PaddleRendererProps) {
       1,
     ),
   );
-  const nearTrailOpacity = useDerivedValue(() => trailStrength.value * 0.2);
-  const farTrailOpacity = useDerivedValue(() => trailStrength.value * 0.08);
+  const nearTrailOpacity = useDerivedValue(
+    () => trailStrength.value * 0.2 * trailIntensity,
+  );
+  const farTrailOpacity = useDerivedValue(
+    () => trailStrength.value * 0.08 * trailIntensity,
+  );
   const pulseHaloOpacity = useDerivedValue(() =>
     Math.max(0, Math.min((paddle.glowPulse.value - 1) * 0.5, 0.42)),
   );
@@ -124,7 +128,7 @@ export function NeonPaddle({ paddle }: PaddleRendererProps) {
   );
 }
 
-export function NeonBall({ ball }: BallRendererProps) {
+export function NeonBall({ ball, trailIntensity }: BallRendererProps) {
   const origin = useDerivedValue(() =>
     vec(ball.centerX.value, ball.centerY.value),
   );
@@ -187,7 +191,7 @@ export function NeonBall({ ball }: BallRendererProps) {
         strokeCap="round"
         strokeJoin="round"
         strokeWidth={outerTrailWidth}
-        opacity={0.5}
+        opacity={0.5 * trailIntensity}
       >
         <LinearGradient
           start={ball.trail.start}
@@ -202,7 +206,7 @@ export function NeonBall({ ball }: BallRendererProps) {
         strokeCap="round"
         strokeJoin="round"
         strokeWidth={innerTrailWidth}
-        opacity={0.7}
+        opacity={0.7 * trailIntensity}
       >
         <LinearGradient
           start={ball.trail.start}

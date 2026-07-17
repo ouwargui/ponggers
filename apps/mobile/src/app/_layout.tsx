@@ -1,4 +1,4 @@
-import { type Href, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import Stack from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -14,9 +14,14 @@ import {
 import type { OnlineSessionRole } from '@/game/session/definition';
 import { GameThemeProvider } from '@/game/themes/game-theme-provider';
 import { defaultGameTheme } from '@/game/themes/theme-registry';
+import {
+  GamePreferencesProvider,
+  useGamePreferences,
+} from '@/settings/game-preferences-provider';
 
-export default function RootLayout() {
+function AppContent() {
   const router = useRouter();
+  const { clearPreferencesStorage } = useGamePreferences();
   const [activeLab, setActiveLab] = useState<GameDevLab | null>(null);
   const openEnvironment = useCallback(() => {
     router.replace('/development/environment');
@@ -36,39 +41,49 @@ export default function RootLayout() {
     onOpenEnvironment: openEnvironment,
     onOpenNetworkLab: openNetworkLab,
     onOpenRtcLab: openRtcLab,
+    onClearPreferencesStorage: clearPreferencesStorage,
     onExitLab: exitLab,
   });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <GameThemeProvider theme={defaultGameTheme}>
-        <StatusBar hidden />
-        <Stack
-          screenOptions={{
-            animation: 'fade',
-            contentStyle: styles.screen,
-            gestureEnabled: false,
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="development/environment" />
-          <Stack.Screen name="solo" />
-          <Stack.Screen name="online" />
-          <Stack.Screen name="game/local" />
-          <Stack.Screen name="game/solo" />
-        </Stack>
+    <GameThemeProvider theme={defaultGameTheme}>
+      <StatusBar hidden />
+      <Stack
+        screenOptions={{
+          animation: 'fade',
+          contentStyle: styles.screen,
+          gestureEnabled: false,
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="development/environment" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="solo" />
+        <Stack.Screen name="online" />
+        <Stack.Screen name="game/local" />
+        <Stack.Screen name="game/solo" />
+      </Stack>
 
-        {__DEV__ && activeLab ? (
-          <View style={styles.debugLab}>
-            {activeLab.type === 'network' ? (
-              <NetworkLab role={activeLab.role} onExit={exitLab} />
-            ) : (
-              <RtcLab role={activeLab.role} onExit={exitLab} />
-            )}
-          </View>
-        ) : null}
-      </GameThemeProvider>
+      {__DEV__ && activeLab ? (
+        <View style={styles.debugLab}>
+          {activeLab.type === 'network' ? (
+            <NetworkLab role={activeLab.role} onExit={exitLab} />
+          ) : (
+            <RtcLab role={activeLab.role} onExit={exitLab} />
+          )}
+        </View>
+      ) : null}
+    </GameThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GamePreferencesProvider>
+        <AppContent />
+      </GamePreferencesProvider>
     </GestureHandlerRootView>
   );
 }

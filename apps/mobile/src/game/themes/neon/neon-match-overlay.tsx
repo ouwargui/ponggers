@@ -21,6 +21,7 @@ import type { PlayerId } from '@/game/engine/types';
 import type { HudOrientation } from '@/game/session/definition';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type { MatchOverlayRendererProps } from '@/game/themes/types';
+import type { EffectLevel } from '@/settings/game-preferences';
 
 const SCORE_EDGE_OFFSET = 72;
 
@@ -212,13 +213,17 @@ function PointWash({ player }: { player: PlayerId }) {
 
 function RematchButton({
   color,
+  hapticsLevel,
   onPress,
 }: {
   color: string;
+  hapticsLevel: EffectLevel;
   onPress: () => void;
 }) {
   const handlePress = () => {
-    void Haptics.selectionAsync();
+    if (hapticsLevel !== 'off') {
+      void Haptics.selectionAsync();
+    }
     onPress();
   };
 
@@ -245,11 +250,13 @@ function ResultPanel({
   player,
   winner,
   hudOrientation,
+  hapticsLevel,
   onRematch,
 }: {
   player: PlayerId;
   winner: PlayerId;
   hudOrientation: HudOrientation;
+  hapticsLevel: EffectLevel;
   onRematch: () => void;
 }) {
   const winnerColors = neonPalette.players[winner];
@@ -283,7 +290,11 @@ function ResultPanel({
       <Text style={[styles.resultSubtitle, { color: winnerColors.glow }]}>
         {winnerColors.label} WINS
       </Text>
-      <RematchButton color={winnerColors.glow} onPress={onRematch} />
+      <RematchButton
+        color={winnerColors.glow}
+        hapticsLevel={hapticsLevel}
+        onPress={onRematch}
+      />
     </Animated.View>
   );
 }
@@ -292,11 +303,13 @@ function MatchResult({
   winner,
   hudOrientation,
   localPlayerId,
+  hapticsLevel,
   onRematch,
 }: {
   winner: PlayerId;
   hudOrientation: HudOrientation;
   localPlayerId: PlayerId | null;
+  hapticsLevel: EffectLevel;
   onRematch: () => void;
 }) {
   if (hudOrientation === 'face-to-face') {
@@ -307,6 +320,7 @@ function MatchResult({
             player="top"
             winner={winner}
             hudOrientation={hudOrientation}
+            hapticsLevel={hapticsLevel}
             onRematch={onRematch}
           />
         </View>
@@ -315,6 +329,7 @@ function MatchResult({
             player="bottom"
             winner={winner}
             hudOrientation={hudOrientation}
+            hapticsLevel={hapticsLevel}
             onRematch={onRematch}
           />
         </View>
@@ -330,6 +345,7 @@ function MatchResult({
         player={player}
         winner={winner}
         hudOrientation={hudOrientation}
+        hapticsLevel={hapticsLevel}
         onRematch={onRematch}
       />
     </View>
@@ -343,7 +359,7 @@ export function NeonMatchOverlay({
   localPlayerId,
   topInset,
   bottomInset,
-  hapticsEnabled,
+  hapticsLevel,
   onRematch,
 }: MatchOverlayRendererProps) {
   const backdropOpacity = useSharedValue(
@@ -362,28 +378,38 @@ export function NeonMatchOverlay({
   }, [backdropOpacity, match.phase.type]);
 
   useEffect(() => {
-    if (!hapticsEnabled || countdown === null) {
+    if (hapticsLevel === 'off' || countdown === null) {
       return;
     }
 
     void Haptics.impactAsync(
-      countdown === 1
+      hapticsLevel === 'full' && countdown === 1
         ? Haptics.ImpactFeedbackStyle.Medium
         : Haptics.ImpactFeedbackStyle.Light,
     );
-  }, [countdown, hapticsEnabled]);
+  }, [countdown, hapticsLevel]);
 
   useEffect(() => {
-    if (!hapticsEnabled) {
+    if (hapticsLevel === 'off') {
       return;
     }
 
     if (match.phase.type === 'point-scored') {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (hapticsLevel === 'full') {
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        );
+      } else {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     } else if (match.phase.type === 'match-ended') {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      void Haptics.impactAsync(
+        hapticsLevel === 'full'
+          ? Haptics.ImpactFeedbackStyle.Heavy
+          : Haptics.ImpactFeedbackStyle.Medium,
+      );
     }
-  }, [hapticsEnabled, match.phase.type]);
+  }, [hapticsLevel, match.phase.type]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -457,6 +483,7 @@ export function NeonMatchOverlay({
           winner={match.phase.winner}
           hudOrientation={hudOrientation}
           localPlayerId={localPlayerId}
+          hapticsLevel={hapticsLevel}
           onRematch={onRematch}
         />
       )}

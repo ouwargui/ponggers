@@ -8,6 +8,7 @@ type UseGameDevMenuOptions = {
   onOpenEnvironment: () => void;
   onOpenNetworkLab: (role: OnlineSessionRole) => void;
   onOpenRtcLab: (role: OnlineSessionRole) => void;
+  onClearPreferencesStorage: () => void;
   onExitLab: () => void;
 };
 
@@ -21,6 +22,7 @@ export function useGameDevMenu({
   onOpenEnvironment,
   onOpenNetworkLab,
   onOpenRtcLab,
+  onClearPreferencesStorage,
   onExitLab,
 }: UseGameDevMenuOptions) {
   useEffect(() => {
@@ -63,7 +65,19 @@ export function useGameDevMenu({
               callback: () => onOpenRtcLab('guest'),
               shouldCollapse: true,
             },
+            {
+              name: 'Clear MMKV Preferences',
+              callback: onClearPreferencesStorage,
+              shouldCollapse: true,
+            },
           ],
     );
-  }, [activeLab, onExitLab, onOpenEnvironment, onOpenNetworkLab, onOpenRtcLab]);
+  }, [
+    activeLab,
+    onClearPreferencesStorage,
+    onExitLab,
+    onOpenEnvironment,
+    onOpenNetworkLab,
+    onOpenRtcLab,
+  ]);
 }

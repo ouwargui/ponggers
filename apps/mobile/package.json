@@ -17,9 +17,9 @@
     "lint": "bunx --bun @biomejs/biome lint --write"
   },
   "dependencies": {
-    "@ponggers/signaling-protocol": "workspace:*",
     "@config-plugins/react-native-webrtc": "^15.0.1",
     "@expo/ui": "~57.0.6",
+    "@ponggers/signaling-protocol": "workspace:*",
     "@shopify/react-native-skia": "^2.8.0",
     "expo": "~57.0.6",
     "expo-constants": "~57.0.5",
@@ -40,6 +40,8 @@
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
     "react-native-gesture-handler": "^3.0.2",
+    "react-native-mmkv": "^4.3.2",
+    "react-native-nitro-modules": "^0.36.1",
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",

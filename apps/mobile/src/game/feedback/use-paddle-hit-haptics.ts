@@ -9,12 +9,22 @@ import {
   type PaddleHitHapticStrength,
   shouldPlayPaddleHitHaptic,
 } from '@/game/feedback/paddle-hit-haptic-policy';
+import type { EffectLevel } from '@/settings/game-preferences';
 
-function playPaddleHitHaptic(strength: PaddleHitHapticStrength) {
+function playPaddleHitHaptic(
+  strength: PaddleHitHapticStrength,
+  level: EffectLevel,
+) {
+  if (level === 'off') {
+    return;
+  }
+
+  const effectiveStrength =
+    level === 'subtle' ? (strength === 'heavy' ? 'medium' : 'light') : strength;
   const style =
-    strength === 'heavy'
+    effectiveStrength === 'heavy'
       ? Haptics.ImpactFeedbackStyle.Heavy
-      : strength === 'medium'
+      : effectiveStrength === 'medium'
         ? Haptics.ImpactFeedbackStyle.Medium
         : Haptics.ImpactFeedbackStyle.Light;
 
@@ -23,9 +33,9 @@ function playPaddleHitHaptic(strength: PaddleHitHapticStrength) {
 
 export function usePaddleHitHaptics(
   lastImpact: SharedValue<BallImpactEvent | null>,
-  enabled = true,
+  level: EffectLevel = 'full',
 ) {
-  const hapticPlayers = getPaddleHapticPlayers(enabled);
+  const hapticPlayers = getPaddleHapticPlayers(level !== 'off');
 
   useAnimatedReaction(
     () => lastImpact.value,
@@ -37,7 +47,9 @@ export function usePaddleHitHaptics(
       scheduleOnRN(
         playPaddleHitHaptic,
         getPaddleHitHapticStrength(impact.intensity),
+        level,
       );
     },
+    [level],
   );
 }

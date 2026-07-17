@@ -9,12 +9,14 @@ import { useGameTheme } from '@/game/themes/game-theme-provider';
 type GameSceneProps = GameGeometry & {
   canvasSize: SharedValue<CanvasSize>;
   rallyHitCount: SharedValue<number>;
+  trailIntensity: number;
   children?: ReactNode;
 };
 
 export function GameScene({
   canvasSize,
   rallyHitCount,
+  trailIntensity,
   centerLine,
   paddles,
   balls,
@@ -40,11 +42,15 @@ export function GameScene({
         {children}
 
         {paddles.map((paddle) => (
-          <Paddle key={paddle.id} paddle={paddle} />
+          <Paddle
+            key={paddle.id}
+            paddle={paddle}
+            trailIntensity={trailIntensity}
+          />
         ))}
 
         {balls.map((ball) => (
-          <Ball key={ball.id} ball={ball} />
+          <Ball key={ball.id} ball={ball} trailIntensity={trailIntensity} />
         ))}
       </Canvas>
 

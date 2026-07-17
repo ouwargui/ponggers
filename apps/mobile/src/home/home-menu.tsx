@@ -19,8 +19,9 @@ export function HomeMenu() {
         accessibilityHint="Create or join an online peer-to-peer match"
       />
       <GameMenuButton
+        href="/settings"
         label="SETTINGS"
-        accessibilityHint="Settings are coming soon"
+        accessibilityHint="Customize game feedback and visual effects"
       />
     </GameMenu>
   );

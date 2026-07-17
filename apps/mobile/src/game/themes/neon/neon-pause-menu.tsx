@@ -5,9 +5,11 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type { PauseMenuRendererProps } from '@/game/themes/types';
+import type { EffectLevel } from '@/settings/game-preferences';
+import { useGamePreferences } from '@/settings/game-preferences-provider';
 
-function playSelectionHaptic() {
-  if (process.env.EXPO_OS === 'ios') {
+function playSelectionHaptic(level: EffectLevel) {
+  if (process.env.EXPO_OS === 'ios' && level !== 'off') {
     void Haptics.selectionAsync();
   }
 }
@@ -15,16 +17,18 @@ function playSelectionHaptic() {
 function PauseAction({
   label,
   onPress,
+  hapticsLevel,
 }: {
   label: string;
   onPress: () => void;
+  hapticsLevel: EffectLevel;
 }) {
   return (
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
-      onPressIn={playSelectionHaptic}
+      onPressIn={() => playSelectionHaptic(hapticsLevel)}
       style={{
         minHeight: 56,
         alignItems: 'center',
@@ -69,6 +73,8 @@ export function NeonPauseMenu({
   onQuit,
   onResume,
 }: PauseMenuRendererProps) {
+  const { preferences } = useGamePreferences();
+
   return (
     <>
       {!isOpen ? (
@@ -78,7 +84,7 @@ export function NeonPauseMenu({
           accessibilityRole="button"
           hitSlop={12}
           onPress={onOpen}
-          onPressIn={playSelectionHaptic}
+          onPressIn={() => playSelectionHaptic(preferences.haptics)}
           style={({ pressed }) => ({
             position: 'absolute',
             top: '50%',
@@ -159,9 +165,17 @@ export function NeonPauseMenu({
               </Text>
             </View>
 
-            <PauseAction label="RESUME" onPress={onResume} />
+            <PauseAction
+              label="RESUME"
+              onPress={onResume}
+              hapticsLevel={preferences.haptics}
+            />
             {onQuit ? (
-              <PauseAction label="QUIT MATCH" onPress={onQuit} />
+              <PauseAction
+                label="QUIT MATCH"
+                onPress={onQuit}
+                hapticsLevel={preferences.haptics}
+              />
             ) : null}
           </View>
         </Animated.View>

@@ -10,20 +10,27 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeIn, useSharedValue } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  ReduceMotion,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import type { CanvasSize } from '@/game/rendering/types';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
+import type { EffectLevel } from '@/settings/game-preferences';
+import { useGamePreferences } from '@/settings/game-preferences-provider';
 
 type GameMenuButtonProps = {
   accessibilityHint: string;
   href?: Href;
   label: string;
+  onPress?: () => void;
 };
 
-function playSelectionHaptic() {
-  if (process.env.EXPO_OS === 'ios') {
+function playSelectionHaptic(level: EffectLevel) {
+  if (process.env.EXPO_OS === 'ios' && level !== 'off') {
     void Haptics.selectionAsync();
   }
 }
@@ -32,14 +39,17 @@ export function GameMenuButton({
   accessibilityHint,
   href,
   label,
+  onPress,
 }: GameMenuButtonProps) {
   const { palette } = useGameTheme();
+  const { preferences } = useGamePreferences();
   const button = (
     <Pressable
       accessibilityHint={accessibilityHint}
       accessibilityLabel={label}
       accessibilityRole="button"
-      onPressIn={playSelectionHaptic}
+      onPress={onPress}
+      onPressIn={() => playSelectionHaptic(preferences.haptics)}
       style={styles.button}
     >
       {({ pressed }) => {
@@ -132,7 +142,10 @@ export function GameMenu({ children }: PropsWithChildren) {
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
-        <Animated.View entering={FadeIn.duration(220)} style={styles.content}>
+        <Animated.View
+          entering={FadeIn.duration(220).reduceMotion(ReduceMotion.Never)}
+          style={styles.content}
+        >
           {children}
         </Animated.View>
       </ScrollView>

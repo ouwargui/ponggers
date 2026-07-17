@@ -9,6 +9,7 @@ import type {
   ScenePaddle,
 } from '@/game/rendering/types';
 import type { HudOrientation } from '@/game/session/definition';
+import type { EffectLevel } from '@/settings/game-preferences';
 
 export type GlowPalette = {
   core: string;
@@ -36,10 +37,12 @@ export type ArenaRendererProps = {
 
 export type PaddleRendererProps = {
   paddle: ScenePaddle;
+  trailIntensity: number;
 };
 
 export type BallRendererProps = {
   ball: SceneBall;
+  trailIntensity: number;
 };
 
 export type RallyCounterRendererProps = {
@@ -53,7 +56,7 @@ export type MatchOverlayRendererProps = {
   localPlayerId: PlayerId | null;
   topInset: number;
   bottomInset: number;
-  hapticsEnabled: boolean;
+  hapticsLevel: EffectLevel;
   onRematch: () => void;
 };
 
