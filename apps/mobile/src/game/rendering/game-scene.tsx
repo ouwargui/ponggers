@@ -3,11 +3,13 @@ import { type ReactNode, useCallback } from 'react';
 import { type LayoutChangeEvent, View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
+import type { ImpactParticle } from '@/game/presentation/impact-particles';
 import type { CanvasSize, GameGeometry } from '@/game/rendering/types';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 
 type GameSceneProps = GameGeometry & {
   canvasSize: SharedValue<CanvasSize>;
+  impactParticles: SharedValue<ImpactParticle[]>;
   rallyHitCount: SharedValue<number>;
   trailIntensity: number;
   children?: ReactNode;
@@ -15,6 +17,7 @@ type GameSceneProps = GameGeometry & {
 
 export function GameScene({
   canvasSize,
+  impactParticles,
   rallyHitCount,
   trailIntensity,
   centerLine,
@@ -23,7 +26,8 @@ export function GameScene({
   children,
 }: GameSceneProps) {
   const theme = useGameTheme();
-  const { Arena, Ball, CenterLine, Paddle, RallyCounter } = theme.renderers;
+  const { Arena, Ball, CenterLine, ImpactParticles, Paddle, RallyCounter } =
+    theme.renderers;
   const handleLayout = useCallback(
     (event: LayoutChangeEvent) => {
       const { width, height } = event.nativeEvent.layout;
@@ -52,6 +56,8 @@ export function GameScene({
         {balls.map((ball) => (
           <Ball key={ball.id} ball={ball} trailIntensity={trailIntensity} />
         ))}
+
+        <ImpactParticles particles={impactParticles} />
       </Canvas>
 
       <RallyCounter hitCount={rallyHitCount} />

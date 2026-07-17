@@ -9,6 +9,7 @@ import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
 import { useGamePauseMenu } from '@/game/pause/use-game-pause-menu';
 import { useBallPresentation } from '@/game/presentation/use-ball-presentation';
+import { useImpactParticles } from '@/game/presentation/use-impact-particles';
 import { useImpactScreenShake } from '@/game/presentation/use-impact-screen-shake';
 import { GameScene } from '@/game/rendering/game-scene';
 import type { CanvasSize } from '@/game/rendering/types';
@@ -125,6 +126,7 @@ export function GameScreen({
     lastImpact,
     screenShakeStrength,
   );
+  const impactParticles = useImpactParticles(ball, lastImpact, canvasSize);
   const ballPresentation = useBallPresentation(ball, lastImpact);
   const paddlePresentations = useSessionPaddlePresentations(
     session,
@@ -162,6 +164,7 @@ export function GameScreen({
       <Animated.View style={[{ flex: 1 }, screenShakeStyle]}>
         <GameScene
           canvasSize={canvasSize}
+          impactParticles={impactParticles}
           rallyHitCount={rallyHitCount}
           trailIntensity={trailIntensity}
           {...geometry}

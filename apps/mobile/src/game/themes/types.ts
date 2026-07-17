@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { MatchState, PlayerId } from '@/game/engine/types';
+import type { ImpactParticle } from '@/game/presentation/impact-particles';
 import type {
   CanvasSize,
   GameGeometry,
@@ -49,6 +50,10 @@ export type RallyCounterRendererProps = {
   hitCount: SharedValue<number>;
 };
 
+export type ImpactParticlesRendererProps = {
+  particles: SharedValue<ImpactParticle[]>;
+};
+
 export type MatchOverlayRendererProps = {
   match: MatchState;
   countdown: number | null;
@@ -80,6 +85,7 @@ export type GameThemeRenderers = {
   CenterLine: ComponentType<CenterLineRendererProps>;
   Paddle: ComponentType<PaddleRendererProps>;
   Ball: ComponentType<BallRendererProps>;
+  ImpactParticles: ComponentType<ImpactParticlesRendererProps>;
   RallyCounter: ComponentType<RallyCounterRendererProps>;
   MatchOverlay: ComponentType<MatchOverlayRendererProps>;
   LatencyIndicator: ComponentType<LatencyIndicatorRendererProps>;
