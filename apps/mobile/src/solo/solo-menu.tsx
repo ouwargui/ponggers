@@ -20,7 +20,7 @@ const DIFFICULTIES: Array<{
   },
   {
     level: 'hard',
-    label: 'HARD',
+    label: 'IMPOSSIBLE',
     accessibilityHint: 'Starts a challenging solo match',
   },
 ];

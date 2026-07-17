@@ -1,0 +1,34 @@
+{
+  "fill" : {
+    "solid" : "display-p3:0.00784,0.01961,0.03922,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "hidden" : false,
+          "image-name" : "ChatGPT Image Jul 17, 2026, 01_08_29 AM.png",
+          "name" : "ChatGPT Image Jul 17, 2026, 01_08_29 AM",
+          "position" : {
+            "scale" : 0.88,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

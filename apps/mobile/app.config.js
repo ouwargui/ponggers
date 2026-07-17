@@ -13,11 +13,11 @@ module.exports = {
   slug: 'ponggers',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/ponggers.png',
   scheme: appScheme,
   userInterfaceStyle: 'automatic',
   ios: {
-    icon: './assets/expo.icon',
+    icon: './assets/ponggers.icon',
     bundleIdentifier: appIdentifier,
     requireFullScreen: true,
     infoPlist: {
@@ -29,10 +29,10 @@ module.exports = {
   android: {
     package: appIdentifier,
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
-      monochromeImage: './assets/images/android-icon-monochrome.png',
+      backgroundColor: '#02050A',
+      foregroundImage: './assets/ponggers.png',
+      backgroundImage: './assets/ponggers.png',
+      monochromeImage: './assets/ponggers.png',
     },
     predictiveBackGestureEnabled: false,
     permissions: [
@@ -57,8 +57,8 @@ module.exports = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
-        image: './assets/images/splash-icon.png',
+        backgroundColor: '#02050A',
+        image: './assets/ponggers.png',
         imageWidth: 76,
       },
     ],
