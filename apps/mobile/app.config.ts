@@ -29,7 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     bitcode: false,
     entitlements: {
-      "com.apple.developer.game-center": true,
+      'com.apple.developer.game-center': true,
     },
   },
   android: {
