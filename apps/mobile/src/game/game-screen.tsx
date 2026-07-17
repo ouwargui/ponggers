@@ -7,6 +7,7 @@ import type { AiDifficulty } from '@/game/ai/ai-difficulty';
 import type { PaddleInput } from '@/game/engine/types';
 import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
+import { useAutoPause } from '@/game/pause/use-auto-pause';
 import { useGamePauseMenu } from '@/game/pause/use-game-pause-menu';
 import { useBallPresentation } from '@/game/presentation/use-ball-presentation';
 import { useImpactParticles } from '@/game/presentation/use-impact-particles';
@@ -111,6 +112,12 @@ export function GameScreen({
     restartMatch,
     simulationTick,
   } = gameLoop;
+  useAutoPause({
+    enabled:
+      session.mode !== 'online-multiplayer' &&
+      match.phase.type !== 'match-ended',
+    onPause: pauseMenu.open,
+  });
   const handleRematch = useOnlineRematch({
     session,
     transport,
