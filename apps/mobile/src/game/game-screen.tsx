@@ -1,3 +1,4 @@
+import { useDeferredSystemGestures } from '@modules/system-gestures';
 import { useCallback } from 'react';
 import { View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
@@ -45,6 +46,7 @@ export function GameScreen({
   hapticsEnabled = true,
   onQuit,
 }: GameScreenProps) {
+  useDeferredSystemGestures();
   const theme = useGameTheme();
   const MatchOverlay = theme.renderers.MatchOverlay;
   const LatencyIndicator = theme.renderers.LatencyIndicator;
