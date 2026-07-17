@@ -1,3 +1,5 @@
+import type { ConfigContext, ExpoConfig } from 'expo/config';
+
 const isDevelopment = process.env.APP_VARIANT === 'development';
 
 const appName = isDevelopment ? 'Pongguinho' : 'Ponggers';
@@ -6,7 +8,8 @@ const appIdentifier = isDevelopment
   : 'com.ouwargui.ponggers';
 const appScheme = isDevelopment ? 'ponggers-dev' : 'ponggers';
 
-module.exports = {
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
   name: appName,
   description:
     'Ponggers is a local and multiplayer pong game that you can play with your friends.',
@@ -25,6 +28,9 @@ module.exports = {
       ITSAppUsesNonExemptEncryption: false,
     },
     bitcode: false,
+    entitlements: {
+      "com.apple.developer.game-center": true,
+    },
   },
   android: {
     package: appIdentifier,
