@@ -43,12 +43,14 @@ export function NetworkLab({
     <View style={styles.container}>
       <View pointerEvents="none" style={styles.hiddenAuthority}>
         <GameScreen
+          trackStatistics={false}
           session={hiddenSession}
           transport={transportPair.peerB}
           hapticsEnabled={false}
         />
       </View>
       <GameScreen
+        trackStatistics={false}
         session={visibleSession}
         transport={transportPair.peerA}
         onQuit={onExit}

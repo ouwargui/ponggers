@@ -75,6 +75,14 @@ export type MatchState = {
   rallyStartedAtTick: number | null;
 };
 
+export type PointCompletedEvent = {
+  type: 'point-completed';
+  scorer: PlayerId;
+  concededBy: PlayerId;
+  rallyHitCount: number;
+  match: MatchState;
+};
+
 export type SpecialEffect =
   | {
       type: 'speed-ball';

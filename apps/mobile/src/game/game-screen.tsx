@@ -3,7 +3,8 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { AiDifficulty } from '@/game/ai/ai-difficulty';
+import { useMatchStatistics } from '@/achievements/use-match-statistics';
+import type { AiDifficulty, AiDifficultyLevel } from '@/game/ai/ai-difficulty';
 import type { PaddleInput } from '@/game/engine/types';
 import { usePaddleHitHaptics } from '@/game/feedback/use-paddle-hit-haptics';
 import { PlayerControlZones } from '@/game/input/player-control-zones';
@@ -41,18 +42,22 @@ import { useGamePreferences } from '@/settings/game-preferences-provider';
 
 type GameScreenProps = {
   aiDifficulty?: AiDifficulty;
+  aiDifficultyLevel?: AiDifficultyLevel;
   session?: GameSessionDefinition;
   transport?: SessionTransport;
   hapticsEnabled?: boolean;
   onQuit?: () => void;
+  trackStatistics?: boolean;
 };
 
 export function GameScreen({
   aiDifficulty,
+  aiDifficultyLevel,
   session = LOCAL_MULTIPLAYER_SESSION,
   transport,
   hapticsEnabled = true,
   onQuit,
+  trackStatistics = true,
 }: GameScreenProps) {
   useDeferredSystemGestures();
   const theme = useGameTheme();
@@ -66,6 +71,11 @@ export function GameScreen({
   const pauseMenu = useGamePauseMenu({ session, onQuit });
   const isOnline = session.mode === 'online-multiplayer';
   const aiPlayerId = getAiControlledPlayer(session);
+  const matchStatistics = useMatchStatistics({
+    aiDifficultyLevel,
+    enabled: trackStatistics,
+    session,
+  });
   const sendRallyEvent = useCallback(
     (event: Parameters<SessionTransport['send']>[0]) => {
       transport?.send(event);
@@ -80,6 +90,8 @@ export function GameScreen({
     aiPlayerId,
     onlineRole: isOnline ? session.onlineRole : null,
     onRallyEvent: isOnline && transport ? sendRallyEvent : undefined,
+    onPointCompleted: matchStatistics.onPointCompleted,
+    onMatchRestarted: matchStatistics.onMatchRestarted,
     paused: pauseMenu.simulationPaused,
   });
   useRemotePaddleInput({

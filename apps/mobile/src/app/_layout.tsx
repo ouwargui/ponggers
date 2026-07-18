@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { GameCenterProvider } from '@/achievements/game-center-provider';
 import { NetworkLab } from '@/game/debug/network-lab';
 import { RtcLab } from '@/game/debug/rtc-lab';
 import {
@@ -58,6 +59,7 @@ function AppContent() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="development/environment" />
+        <Stack.Screen name="achievements" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="solo" />
         <Stack.Screen name="online" />
@@ -82,7 +84,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GamePreferencesProvider>
-        <AppContent />
+        <GameCenterProvider>
+          <AppContent />
+        </GameCenterProvider>
       </GamePreferencesProvider>
     </GestureHandlerRootView>
   );

@@ -19,6 +19,11 @@ export function HomeMenu() {
         accessibilityHint="Create or join an online peer-to-peer match"
       />
       <GameMenuButton
+        href="/achievements"
+        label="ACHIEVEMENTS"
+        accessibilityHint="View achievement progress and unlocked theme rewards"
+      />
+      <GameMenuButton
         href="/settings"
         label="SETTINGS"
         accessibilityHint="Customize game feedback and visual effects"

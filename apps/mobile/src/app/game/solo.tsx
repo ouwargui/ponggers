@@ -21,6 +21,7 @@ export default function SoloGameScreen() {
   return (
     <GameScreen
       aiDifficulty={AI_DIFFICULTIES[difficultyLevel]}
+      aiDifficultyLevel={difficultyLevel}
       session={SOLO_SESSION}
       onQuit={quitMatch}
     />

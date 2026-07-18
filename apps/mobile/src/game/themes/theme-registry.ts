@@ -8,3 +8,9 @@ export const gameThemeRegistry = {
 export type GameThemeId = keyof typeof gameThemeRegistry;
 
 export const defaultGameTheme = gameThemeRegistry.neon;
+
+export function getRegisteredGameTheme(id: string): GameTheme | null {
+  return Object.hasOwn(gameThemeRegistry, id)
+    ? gameThemeRegistry[id as GameThemeId]
+    : null;
+}

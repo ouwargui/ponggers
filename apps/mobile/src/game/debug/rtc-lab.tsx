@@ -146,6 +146,7 @@ export function RtcLab({
   if (connected || keepsRunningDuringReconnect) {
     return (
       <GameScreen
+        trackStatistics={false}
         session={
           role === 'host'
             ? ONLINE_MULTIPLAYER_HOST_SESSION

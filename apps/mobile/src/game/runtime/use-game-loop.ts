@@ -36,6 +36,7 @@ import type {
   MatchState,
   PaddleState,
   PlayerId,
+  PointCompletedEvent,
 } from '@/game/engine/types';
 import type { CanvasSize } from '@/game/rendering/types';
 import type { OnlineSessionRole } from '@/game/session/definition';
@@ -61,6 +62,8 @@ type GameLoopOptions = {
   bottomPaddle: SharedValue<PaddleState>;
   onlineRole?: OnlineSessionRole | null;
   onRallyEvent?: (event: RallyEventMessage) => void;
+  onPointCompleted?: (event: PointCompletedEvent) => void;
+  onMatchRestarted?: () => void;
   paused?: SharedValue<boolean>;
 };
 
@@ -79,6 +82,7 @@ function applyRemoteRallyEventOnUI(
   simulationTick: SharedValue<number>,
   event: RallyEventMessage,
   updateSnapshot: (nextMatch: MatchState, countdown: number | null) => void,
+  onPointCompleted?: (event: PointCompletedEvent) => void,
 ) {
   'worklet';
 
@@ -113,6 +117,15 @@ function applyRemoteRallyEventOnUI(
       boundary: 'top',
       tick: simulationTick.value,
     });
+    if (onPointCompleted) {
+      scheduleOnRN(onPointCompleted, {
+        type: 'point-completed',
+        scorer: 'bottom',
+        concededBy: 'top',
+        rallyHitCount: event.shot,
+        match: nextMatch,
+      });
+    }
     ball.value = createWaitingBall();
     lastImpact.value = null;
     rallyHitCount.value = 0;
@@ -162,6 +175,8 @@ export function useGameLoop({
   bottomPaddle,
   onlineRole = null,
   onRallyEvent,
+  onPointCompleted,
+  onMatchRestarted,
   paused,
 }: GameLoopOptions) {
   const [snapshot, setSnapshot] = useState<GameLoopSnapshot>(() => {
@@ -208,6 +223,7 @@ export function useGameLoop({
         simulationTick,
         transformRallyEventForPeer(event),
         updateSnapshot,
+        onPointCompleted,
       );
     },
     [
@@ -216,6 +232,7 @@ export function useGameLoop({
       lastImpact,
       match,
       onlineRole,
+      onPointCompleted,
       rallyAuthority,
       rallyHitCount,
       simulationTick,
@@ -289,6 +306,7 @@ export function useGameLoop({
   );
 
   const restartMatch = useCallback(() => {
+    onMatchRestarted?.();
     scheduleOnUI(() => {
       'worklet';
 
@@ -318,6 +336,7 @@ export function useGameLoop({
     countdown,
     lastImpact,
     match,
+    onMatchRestarted,
     onlineRole,
     rallyAuthority,
     rallyHitCount,
@@ -363,6 +382,7 @@ export function useGameLoop({
     let nextRallyAuthority = rallyAuthority.value;
     let nextRallyHitCount = rallyHitCount.value;
     let nextRallyEvent: RallyEventMessage | null = null;
+    let nextPointCompletedEvent: PointCompletedEvent | null = null;
     let didResetBall = false;
     let didStep = false;
     while (accumulatedTime.value >= FIXED_STEP_SECONDS) {
@@ -481,7 +501,17 @@ export function useGameLoop({
               }
             }
 
+            const completedRallyHitCount = isLocallyConcededOnlinePoint
+              ? nextRallyAuthority.shot
+              : nextRallyHitCount;
             nextMatch = recordGoal(nextMatch, stepResult.goal);
+            nextPointCompletedEvent = {
+              type: 'point-completed',
+              scorer: stepResult.goal.scorer,
+              concededBy: stepResult.goal.concededBy,
+              rallyHitCount: completedRallyHitCount,
+              match: nextMatch,
+            };
             nextBall = createWaitingBall();
             nextRallyHitCount = 0;
             didResetBall = true;
@@ -581,6 +611,10 @@ export function useGameLoop({
 
       if (onRallyEvent && nextRallyEvent) {
         scheduleOnRN(onRallyEvent, nextRallyEvent);
+      }
+
+      if (onPointCompleted && nextPointCompletedEvent) {
+        scheduleOnRN(onPointCompleted, nextPointCompletedEvent);
       }
     }
   });
