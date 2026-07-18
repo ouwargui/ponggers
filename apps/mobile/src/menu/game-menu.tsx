@@ -5,7 +5,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { useGameTheme } from '@/game/themes/game-theme-provider';
-import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { ThemedArenaBackground } from '@/menu/themed-arena-background';
 import type { EffectLevel } from '@/settings/game-preferences';
 import { useGamePreferences } from '@/settings/game-preferences-provider';
@@ -31,7 +30,7 @@ export function GameMenuButton({
   onPress,
   replace = false,
 }: GameMenuButtonProps) {
-  const { palette } = useGameTheme();
+  const { effects, palette } = useGameTheme();
   const { preferences } = useGamePreferences();
   const button = (
     <Pressable
@@ -56,7 +55,7 @@ export function GameMenuButton({
                 color,
                 transform: [{ scale: pressed ? 1.04 : 1 }],
               },
-              neonTextGlow(glowColor, pressed ? 14 : 3),
+              effects.textGlow(glowColor, pressed ? 14 : 3),
             ]}
           >
             {label}

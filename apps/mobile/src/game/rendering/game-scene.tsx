@@ -40,7 +40,7 @@ export function GameScene({
   return (
     <View style={{ flex: 1 }} onLayout={handleLayout}>
       <Canvas style={{ flex: 1 }}>
-        <Arena canvasSize={canvasSize} />
+        <Arena canvasSize={canvasSize} rallyHitCount={rallyHitCount} />
         <CenterLine line={centerLine} />
 
         {children}

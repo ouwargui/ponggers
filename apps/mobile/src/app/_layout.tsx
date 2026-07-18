@@ -10,6 +10,7 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { GameCenterProvider } from '@/achievements/game-center-provider';
+import { useAchievementProgress } from '@/achievements/use-achievement-progress';
 import { NetworkLab } from '@/game/debug/network-lab';
 import { RtcLab } from '@/game/debug/rtc-lab';
 import {
@@ -21,7 +22,11 @@ import {
   GameThemeProvider,
   useGameTheme,
 } from '@/game/themes/game-theme-provider';
-import { defaultGameTheme } from '@/game/themes/theme-registry';
+import {
+  defaultGameTheme,
+  getRegisteredGameTheme,
+} from '@/game/themes/theme-registry';
+import { getAvailableGameThemeIds } from '@/game/themes/theme-unlocks';
 import {
   GamePreferencesProvider,
   useGamePreferences,
@@ -102,23 +107,38 @@ function ThemedRootLayout() {
   const { palette } = useGameTheme();
 
   return (
-    <GestureHandlerRootView
-      style={[styles.root, { backgroundColor: palette.arena }]}
-    >
-      <GamePreferencesProvider>
-        <GameCenterProvider>
-          <AppContent />
-        </GameCenterProvider>
-      </GamePreferencesProvider>
-    </GestureHandlerRootView>
+    <View style={[styles.root, { backgroundColor: palette.arena }]}>
+      <AppContent />
+    </View>
+  );
+}
+
+function SelectedThemeRoot() {
+  const { achievementProgress } = useAchievementProgress();
+  const { preferences } = useGamePreferences();
+  const availableThemeIds = getAvailableGameThemeIds(achievementProgress);
+  const selectedThemeId = availableThemeIds.includes(preferences.themeId)
+    ? preferences.themeId
+    : 'neon';
+  const selectedTheme =
+    getRegisteredGameTheme(selectedThemeId) ?? defaultGameTheme;
+
+  return (
+    <GameThemeProvider theme={selectedTheme}>
+      <ThemedRootLayout />
+    </GameThemeProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <GameThemeProvider theme={defaultGameTheme}>
-      <ThemedRootLayout />
-    </GameThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <GamePreferencesProvider>
+        <GameCenterProvider>
+          <SelectedThemeRoot />
+        </GameCenterProvider>
+      </GamePreferencesProvider>
+    </GestureHandlerRootView>
   );
 }
 

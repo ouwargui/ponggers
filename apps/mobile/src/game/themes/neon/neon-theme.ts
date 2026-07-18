@@ -9,10 +9,14 @@ import {
   NeonCenterLine,
   NeonPaddle,
 } from '@/game/themes/neon/neon-renderers';
+import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { neonPalette } from '@/game/themes/neon/neon-tokens';
 import type { GameTheme } from '@/game/themes/types';
 
 export const neonTheme = {
+  effects: {
+    textGlow: neonTextGlow,
+  },
   id: 'neon',
   name: 'Neon',
   palette: neonPalette,

@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useGameTheme } from '@/game/themes/game-theme-provider';
-import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { GameMenu, GameMenuButton } from '@/menu/game-menu';
 import {
   EFFECT_LEVEL_MULTIPLIER,
@@ -37,7 +36,7 @@ function PreferenceRow({
   previewStrength = 1,
   value,
 }: PreferenceRowProps) {
-  const { palette } = useGameTheme();
+  const { effects, palette } = useGameTheme();
   const previewOffset = useSharedValue(0);
   const previewStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: previewOffset.value }],
@@ -69,7 +68,7 @@ function PreferenceRow({
               style={[
                 styles.preferenceLabel,
                 { color: palette.ball.core },
-                neonTextGlow(palette.ball.glow, pressed ? 7 : 2),
+                effects.textGlow(palette.ball.glow, pressed ? 7 : 2),
               ]}
             >
               {label}
@@ -78,7 +77,7 @@ function PreferenceRow({
               style={[
                 styles.preferenceValue,
                 { color: palette.players.bottom.glow },
-                neonTextGlow(palette.players.bottom.glow, pressed ? 12 : 5),
+                effects.textGlow(palette.players.bottom.glow, pressed ? 12 : 5),
               ]}
             >
               {value}
@@ -128,6 +127,7 @@ export function SettingsScreen() {
     },
     [preferences, setPreference],
   );
+
   return (
     <GameMenu>
       <View style={styles.preferences}>

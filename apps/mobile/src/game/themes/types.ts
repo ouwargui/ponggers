@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { TextStyle } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { MatchState, PlayerId } from '@/game/engine/types';
@@ -34,6 +35,7 @@ export type CenterLineRendererProps = {
 
 export type ArenaRendererProps = {
   canvasSize: SharedValue<CanvasSize>;
+  rallyHitCount?: SharedValue<number>;
 };
 
 export type PaddleRendererProps = {
@@ -93,6 +95,9 @@ export type GameThemeRenderers = {
 };
 
 export type GameTheme = {
+  effects: {
+    textGlow: (color: string, radius: number) => TextStyle;
+  };
   id: string;
   name: string;
   palette: GameThemePalette;

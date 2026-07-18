@@ -2,8 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
-import { neonPalette } from '@/game/themes/neon/neon-tokens';
+import { useGameTheme } from '@/game/themes/game-theme-provider';
 import type { PauseMenuRendererProps } from '@/game/themes/types';
 import type { EffectLevel } from '@/settings/game-preferences';
 import { useGamePreferences } from '@/settings/game-preferences-provider';
@@ -23,6 +22,8 @@ function PauseAction({
   onPress: () => void;
   hapticsLevel: EffectLevel;
 }) {
+  const { effects, palette } = useGameTheme();
+
   return (
     <Pressable
       accessibilityLabel={label}
@@ -37,12 +38,10 @@ function PauseAction({
       }}
     >
       {({ pressed }) => {
-        const color = pressed
-          ? neonPalette.players.bottom.glow
-          : neonPalette.ball.core;
+        const color = pressed ? palette.players.bottom.glow : palette.ball.core;
         const glowColor = pressed
-          ? neonPalette.players.bottom.glow
-          : neonPalette.ball.glow;
+          ? palette.players.bottom.glow
+          : palette.ball.glow;
 
         return (
           <Text
@@ -55,7 +54,7 @@ function PauseAction({
                 letterSpacing: 3.5,
                 transform: [{ scale: pressed ? 1.04 : 1 }],
               },
-              neonTextGlow(glowColor, pressed ? 14 : 3),
+              effects.textGlow(glowColor, pressed ? 14 : 3),
             ]}
           >
             {label}
@@ -73,6 +72,7 @@ export function NeonPauseMenu({
   onQuit,
   onResume,
 }: PauseMenuRendererProps) {
+  const { effects, palette } = useGameTheme();
   const { preferences } = useGamePreferences();
 
   return (
@@ -102,14 +102,14 @@ export function NeonPauseMenu({
               style={[
                 {
                   color: pressed
-                    ? neonPalette.players.bottom.glow
-                    : neonPalette.ball.core,
+                    ? palette.players.bottom.glow
+                    : palette.ball.core,
                   fontSize: 18,
                   fontWeight: '900',
                   letterSpacing: 1,
                   opacity: pressed ? 1 : 0.55,
                 },
-                neonTextGlow(neonPalette.players.bottom.glow, pressed ? 12 : 0),
+                effects.textGlow(palette.players.bottom.glow, pressed ? 12 : 0),
               ]}
             >
               Ⅱ
@@ -141,7 +141,7 @@ export function NeonPauseMenu({
               right: 0,
               bottom: 0,
               left: 0,
-              backgroundColor: neonPalette.arena,
+              backgroundColor: palette.arena,
               opacity: 0.88,
             }}
           />
@@ -152,13 +152,13 @@ export function NeonPauseMenu({
                 accessibilityRole="header"
                 style={[
                   {
-                    color: neonPalette.players.bottom.glow,
+                    color: palette.players.bottom.glow,
                     textAlign: 'center',
                     fontSize: 13,
                     fontWeight: '800',
                     letterSpacing: 4,
                   },
-                  neonTextGlow(neonPalette.players.bottom.glow, 10),
+                  effects.textGlow(palette.players.bottom.glow, 10),
                 ]}
               >
                 {freezesSimulation ? 'PAUSED' : 'MATCH MENU'}

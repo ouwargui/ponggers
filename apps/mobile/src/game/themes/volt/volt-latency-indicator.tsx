@@ -1,26 +1,24 @@
 import { StyleSheet, Text } from 'react-native';
 
-import { useGameTheme } from '@/game/themes/game-theme-provider';
 import type { LatencyIndicatorRendererProps } from '@/game/themes/types';
+import { voltPalette } from '@/game/themes/volt/volt-tokens';
 
-export function NeonLatencyIndicator({
+export function VoltLatencyIndicator({
   latencyMs,
   player,
   topInset,
   bottomInset,
 }: LatencyIndicatorRendererProps) {
-  const { palette } = useGameTheme();
-
   return (
     <Text
       pointerEvents="none"
       style={[
         styles.label,
-        { color: palette.players[player].core },
+        { color: voltPalette.players[player].glow },
         player === 'top' ? { top: topInset + 4 } : { bottom: bottomInset + 4 },
       ]}
     >
-      {Math.max(0, Math.round(latencyMs))} ms
+      {Math.max(0, Math.round(latencyMs))} MS
     </Text>
   );
 }
@@ -29,12 +27,15 @@ const styles = StyleSheet.create({
   label: {
     position: 'absolute',
     right: 12,
-    fontSize: 9,
+    paddingLeft: 5,
+    borderLeftWidth: 1,
+    borderLeftColor: voltPalette.centerLine.glow,
+    fontSize: 8,
     fontVariant: ['tabular-nums'],
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    fontWeight: '800',
+    letterSpacing: 0.8,
     lineHeight: 12,
-    opacity: 0.48,
+    opacity: 0.52,
     textAlign: 'right',
     zIndex: 3,
   },

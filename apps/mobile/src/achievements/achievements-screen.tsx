@@ -8,7 +8,6 @@ import {
 } from '@/achievements/definitions';
 import { useAchievementProgress } from '@/achievements/use-achievement-progress';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
-import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { getThemeReward } from '@/game/themes/theme-rewards';
 import { GameMenu } from '@/menu/game-menu';
 
@@ -29,7 +28,7 @@ function AchievementCard({
   percentComplete,
   rawCurrent,
 }: AchievementCardProps) {
-  const { palette } = useGameTheme();
+  const { effects, palette } = useGameTheme();
   const completed = percentComplete >= 100;
   const accent = completed ? palette.players.bottom.glow : palette.ball.glow;
   const themeReward = getThemeReward(achievement.themeRewardId);
@@ -75,7 +74,7 @@ function AchievementCard({
             style={[
               styles.glyphText,
               { color: accent },
-              completed ? neonTextGlow(accent, 7) : null,
+              completed ? effects.textGlow(accent, 7) : null,
             ]}
           >
             {achievement.glyph}
@@ -87,7 +86,7 @@ function AchievementCard({
             style={[
               styles.cardTitle,
               { color: completed ? accent : palette.ball.core },
-              completed ? neonTextGlow(accent, 4) : null,
+              completed ? effects.textGlow(accent, 4) : null,
             ]}
           >
             {achievement.title}
@@ -167,7 +166,7 @@ function AchievementCard({
 }
 
 export function AchievementsScreen() {
-  const { palette } = useGameTheme();
+  const { effects, palette } = useGameTheme();
   const { achievementProgress, statistics } = useAchievementProgress();
   const orderedAchievements = orderAchievementsByProgress(achievementProgress);
   const completedCount = ACHIEVEMENTS.filter(
@@ -198,7 +197,7 @@ export function AchievementsScreen() {
             style={[
               styles.summaryValue,
               { color: palette.players.bottom.glow },
-              neonTextGlow(palette.players.bottom.glow, 8),
+              effects.textGlow(palette.players.bottom.glow, 8),
             ]}
           >
             {completedCount}/{ACHIEVEMENTS.length}
@@ -223,7 +222,7 @@ export function AchievementsScreen() {
             style={[
               styles.summaryValue,
               { color: palette.ball.core },
-              neonTextGlow(palette.ball.glow, 5),
+              effects.textGlow(palette.ball.glow, 5),
             ]}
           >
             {earnedPoints}/{totalPoints}

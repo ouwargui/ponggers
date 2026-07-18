@@ -1,12 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  type TextStyle,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -19,23 +13,11 @@ import Animated, {
 
 import type { PlayerId } from '@/game/engine/types';
 import type { HudOrientation } from '@/game/session/definition';
-import { neonPalette } from '@/game/themes/neon/neon-tokens';
+import { useGameTheme } from '@/game/themes/game-theme-provider';
 import type { MatchOverlayRendererProps } from '@/game/themes/types';
 import type { EffectLevel } from '@/settings/game-preferences';
 
 const SCORE_EDGE_OFFSET = 72;
-
-function neonTextGlow(color: string, radius: number): TextStyle {
-  const inset = Math.ceil(radius + 4);
-
-  return {
-    margin: -inset,
-    padding: inset,
-    textShadowColor: color,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: radius,
-  };
-}
 
 function getPlayerRotation(player: PlayerId, hudOrientation: HudOrientation) {
   return hudOrientation === 'face-to-face' && player === 'top'
@@ -52,7 +34,8 @@ function NeonScore({
   player: PlayerId;
   hudOrientation: HudOrientation;
 }) {
-  const colors = neonPalette.players[player];
+  const { effects, palette } = useGameTheme();
+  const colors = palette.players[player];
   const previousValue = useRef(value);
   const scale = useSharedValue(1);
   const rotation = getPlayerRotation(player, hudOrientation);
@@ -83,7 +66,7 @@ function NeonScore({
         {
           color: colors.core,
         },
-        neonTextGlow(colors.glow, 12),
+        effects.textGlow(colors.glow, 12),
         animatedStyle,
       ]}
     >
@@ -99,6 +82,7 @@ function CountdownBeat({
   value: number;
   rotation: string;
 }) {
+  const { effects, palette } = useGameTheme();
   const scale = useSharedValue(0.65);
   const opacity = useSharedValue(0);
 
@@ -124,7 +108,14 @@ function CountdownBeat({
   }));
 
   return (
-    <Animated.Text style={[styles.countdown, animatedStyle]}>
+    <Animated.Text
+      style={[
+        styles.countdown,
+        { color: palette.ball.core },
+        effects.textGlow(palette.ball.glow, 24),
+        animatedStyle,
+      ]}
+    >
       {value}
     </Animated.Text>
   );
@@ -137,7 +128,8 @@ function PointCallout({
   player: PlayerId;
   hudOrientation: HudOrientation;
 }) {
-  const colors = neonPalette.players[player];
+  const { effects, palette } = useGameTheme();
+  const colors = palette.players[player];
   const scale = useSharedValue(0.78);
   const opacity = useSharedValue(0);
   const rotation = getPlayerRotation(player, hudOrientation);
@@ -174,7 +166,7 @@ function PointCallout({
         style={[
           styles.pointText,
           { color: colors.core },
-          neonTextGlow(colors.glow, 18),
+          effects.textGlow(colors.glow, 18),
         ]}
       >
         POINT
@@ -187,6 +179,7 @@ function PointCallout({
 }
 
 function PointWash({ player }: { player: PlayerId }) {
+  const { palette } = useGameTheme();
   const opacity = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
@@ -204,7 +197,7 @@ function PointWash({ player }: { player: PlayerId }) {
       style={[
         styles.pointWash,
         player === 'top' ? styles.topWash : styles.bottomWash,
-        { backgroundColor: neonPalette.players[player].glow },
+        { backgroundColor: palette.players[player].glow },
         animatedStyle,
       ]}
     />
@@ -259,7 +252,8 @@ function ResultPanel({
   hapticsLevel: EffectLevel;
   onRematch: () => void;
 }) {
-  const winnerColors = neonPalette.players[winner];
+  const { effects, palette } = useGameTheme();
+  const winnerColors = palette.players[winner];
   const rotation = getPlayerRotation(player, hudOrientation);
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
@@ -282,7 +276,7 @@ function ResultPanel({
           {
             color: winnerColors.core,
           },
-          neonTextGlow(winnerColors.glow, 22),
+          effects.textGlow(winnerColors.glow, 22),
         ]}
       >
         {player === winner ? 'YOU WIN' : 'YOU LOSE'}
@@ -362,6 +356,7 @@ export function NeonMatchOverlay({
   hapticsLevel,
   onRematch,
 }: MatchOverlayRendererProps) {
+  const { palette } = useGameTheme();
   const backdropOpacity = useSharedValue(
     match.phase.type === 'playing' ? 0 : 0.28,
   );
@@ -421,7 +416,11 @@ export function NeonMatchOverlay({
     <View pointerEvents="box-none" style={styles.overlay}>
       <Animated.View
         pointerEvents="none"
-        style={[styles.backdrop, backdropStyle]}
+        style={[
+          styles.backdrop,
+          { backgroundColor: palette.arena },
+          backdropStyle,
+        ]}
       />
 
       {pointScorer && (
@@ -505,7 +504,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: '#00060c',
   },
   scores: {
     position: 'absolute',
@@ -522,8 +520,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   countdown: {
-    color: neonPalette.ball.core,
-    ...neonTextGlow(neonPalette.ball.glow, 24),
     fontSize: 76,
     fontWeight: '800',
     textAlign: 'center',

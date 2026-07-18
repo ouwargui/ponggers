@@ -15,14 +15,14 @@ import {
   isRallyMilestone,
   RALLY_COUNTER_VISIBLE_FROM,
 } from '@/game/engine/rally';
-import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
-import { neonPalette } from '@/game/themes/neon/neon-tokens';
+import { useGameTheme } from '@/game/themes/game-theme-provider';
 import type { RallyCounterRendererProps } from '@/game/themes/types';
 
 const COUNTER_SIZE = 44;
 const CENTER_LINE_CLEARANCE = 82;
 
 export function NeonRallyCounter({ hitCount }: RallyCounterRendererProps) {
+  const { effects, palette } = useGameTheme();
   const [displayedHitCount, setDisplayedHitCount] = useState(0);
   const renderedHitCount = useSharedValue(0);
   const opacity = useSharedValue(0);
@@ -77,8 +77,8 @@ export function NeonRallyCounter({ hitCount }: RallyCounterRendererProps) {
       <Text
         style={[
           styles.label,
-          { color: neonPalette.ball.core },
-          neonTextGlow(neonPalette.ball.glow, 7),
+          { color: palette.ball.core },
+          effects.textGlow(palette.ball.glow, 7),
         ]}
       >
         {displayedHitCount}×

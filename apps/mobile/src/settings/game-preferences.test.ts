@@ -18,14 +18,20 @@ describe('parseGamePreferences', () => {
         JSON.stringify({
           haptics: 'subtle',
           screenShake: 'maximum',
+          themeId: 'volt',
           trails: 'off',
         }),
       ),
     ).toEqual({
       haptics: 'subtle',
       screenShake: 'full',
+      themeId: 'volt',
       trails: 'off',
     });
+
+    expect(
+      parseGamePreferences(JSON.stringify({ themeId: 'missing' })).themeId,
+    ).toBe('neon');
   });
 });
 

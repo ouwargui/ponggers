@@ -5,12 +5,14 @@ export type EffectLevel = (typeof EFFECT_LEVELS)[number];
 export type GamePreferences = {
   haptics: EffectLevel;
   screenShake: EffectLevel;
+  themeId: GameThemeId;
   trails: EffectLevel;
 };
 
 export const DEFAULT_GAME_PREFERENCES: GamePreferences = {
   haptics: 'full',
   screenShake: 'full',
+  themeId: 'neon',
   trails: 'full',
 };
 
@@ -52,6 +54,9 @@ export function parseGamePreferences(
       screenShake: isOneOf(candidate.screenShake, EFFECT_LEVELS)
         ? candidate.screenShake
         : DEFAULT_GAME_PREFERENCES.screenShake,
+      themeId: isOneOf(candidate.themeId, GAME_THEME_IDS)
+        ? candidate.themeId
+        : DEFAULT_GAME_PREFERENCES.themeId,
       trails: isOneOf(candidate.trails, EFFECT_LEVELS)
         ? candidate.trails
         : DEFAULT_GAME_PREFERENCES.trails,
@@ -72,3 +77,5 @@ export function getNextOption<T extends string>(
 export function formatPreferenceValue(value: string): string {
   return value.toUpperCase();
 }
+
+import { GAME_THEME_IDS, type GameThemeId } from '@/game/themes/theme-ids';

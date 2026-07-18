@@ -25,6 +25,11 @@ export function HomeMenu() {
         accessibilityHint="View achievement progress and unlocked theme rewards"
       />
       <GameMenuButton
+        href="/themes"
+        label="THEMES"
+        accessibilityHint="Preview and equip unlocked visual themes"
+      />
+      <GameMenuButton
         href="/settings"
         label="SETTINGS"
         accessibilityHint="Customize game feedback and visual effects"
