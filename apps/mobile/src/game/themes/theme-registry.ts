@@ -1,4 +1,5 @@
 import { neonTheme } from '@/game/themes/neon/neon-theme';
+import { prismTheme } from '@/game/themes/prism/prism-theme';
 import { GAME_THEME_IDS, type GameThemeId } from '@/game/themes/theme-ids';
 import type { GameTheme } from '@/game/themes/types';
 import { voltTheme } from '@/game/themes/volt/volt-theme';
@@ -6,6 +7,7 @@ import { voltTheme } from '@/game/themes/volt/volt-theme';
 export const gameThemeRegistry = {
   neon: neonTheme,
   volt: voltTheme,
+  prism: prismTheme,
 } satisfies Record<GameThemeId, GameTheme>;
 
 export const defaultGameTheme = gameThemeRegistry.neon;

@@ -4,8 +4,13 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import type { PauseMenuRendererProps } from '@/game/themes/types';
+import { getCenteredHudTranslateY } from '@/game/presentation/hud-layout';
 import type { EffectLevel } from '@/settings/game-preferences';
 import { useGamePreferences } from '@/settings/game-preferences-provider';
+
+const PAUSE_TRIGGER_SIZE = 44;
+const PAUSE_TRIGGER_TRANSLATE_Y =
+  getCenteredHudTranslateY(PAUSE_TRIGGER_SIZE);
 
 function playSelectionHaptic(level: EffectLevel) {
   if (process.env.EXPO_OS === 'ios' && level !== 'off') {
@@ -90,11 +95,14 @@ export function NeonPauseMenu({
             top: '50%',
             right: 12,
             zIndex: 2,
-            width: 44,
-            height: 44,
+            width: PAUSE_TRIGGER_SIZE,
+            height: PAUSE_TRIGGER_SIZE,
             alignItems: 'center',
             justifyContent: 'center',
-            transform: [{ translateY: -22 }, { scale: pressed ? 1.08 : 1 }],
+            transform: [
+              { translateY: PAUSE_TRIGGER_TRANSLATE_Y },
+              { scale: pressed ? 1.08 : 1 },
+            ],
           })}
         >
           {({ pressed }) => (

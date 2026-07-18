@@ -3,9 +3,13 @@ import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAchievementProgress } from '@/achievements/use-achievement-progress';
-import { GameThemeProvider } from '@/game/themes/game-theme-provider';
+import {
+  GameThemeProvider,
+  useGameTheme,
+} from '@/game/themes/game-theme-provider';
 import { GAME_THEME_IDS, type GameThemeId } from '@/game/themes/theme-ids';
 import { gameThemeRegistry } from '@/game/themes/theme-registry';
+import { THEME_REWARDS } from '@/game/themes/theme-rewards';
 import {
   getAvailableGameThemeIds,
   getGameThemeUnlockAchievement,
@@ -14,6 +18,11 @@ import type { GameTheme } from '@/game/themes/types';
 import { GameMenu } from '@/menu/game-menu';
 import { ThemedArenaBackground } from '@/menu/themed-arena-background';
 import { useGamePreferences } from '@/settings/game-preferences-provider';
+
+const IMPLEMENTED_THEME_IDS = new Set<string>(GAME_THEME_IDS);
+const COMING_SOON_THEMES = Object.values(THEME_REWARDS).filter(
+  (theme) => !IMPLEMENTED_THEME_IDS.has(theme.id),
+);
 
 type ThemeCardProps = {
   isSelected: boolean;
@@ -164,6 +173,42 @@ function ThemeCard({
   );
 }
 
+function ComingSoonThemeCard({ name }: { name: string }) {
+  const { effects, palette } = useGameTheme();
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${name}, coming soon`}
+      style={[
+        styles.comingSoonCard,
+        {
+          backgroundColor: `${palette.ball.core}06`,
+          borderColor: `${palette.ball.core}24`,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.comingSoonName,
+          { color: palette.ball.core },
+          effects.textGlow(palette.ball.glow, 2),
+        ]}
+      >
+        {name}
+      </Text>
+      <Text
+        style={[
+          styles.comingSoonLabel,
+          { color: `${palette.ball.core}80` },
+        ]}
+      >
+        COMING SOON
+      </Text>
+    </View>
+  );
+}
+
 export function ThemesScreen() {
   const { achievementProgress } = useAchievementProgress();
   const { preferences, setPreference } = useGamePreferences();
@@ -205,6 +250,9 @@ export function ThemesScreen() {
             />
           );
         })}
+        {COMING_SOON_THEMES.map((theme) => (
+          <ComingSoonThemeCard key={theme.id} name={theme.name} />
+        ))}
       </View>
     </GameMenu>
   );
@@ -297,5 +345,27 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 2,
     lineHeight: 13,
+  },
+  comingSoonCard: {
+    minHeight: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  comingSoonName: {
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 4.5,
+  },
+  comingSoonLabel: {
+    marginTop: 6,
+    textAlign: 'center',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 2.2,
   },
 });

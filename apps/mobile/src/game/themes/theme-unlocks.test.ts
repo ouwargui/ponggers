@@ -27,4 +27,15 @@ describe('game theme unlocks', () => {
       ACHIEVEMENT_IDS.spark,
     );
   });
+
+  test('unlocks Prism with a flawless win', () => {
+    expect(
+      getAvailableGameThemeIds({
+        [ACHIEVEMENT_IDS.flawless]: 100,
+      }),
+    ).toEqual(['neon', 'prism']);
+    expect(getGameThemeUnlockAchievement('prism')?.id).toBe(
+      ACHIEVEMENT_IDS.flawless,
+    );
+  });
 });

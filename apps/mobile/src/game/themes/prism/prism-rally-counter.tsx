@@ -16,19 +16,22 @@ import {
   RALLY_COUNTER_VISIBLE_FROM,
 } from '@/game/engine/rally';
 import { getCenteredHudTranslateY } from '@/game/presentation/hud-layout';
+import { prismTextGlow } from '@/game/themes/prism/prism-text-glow';
+import {
+  PRISM_SPECTRUM,
+  prismPalette,
+} from '@/game/themes/prism/prism-tokens';
 import type { RallyCounterRendererProps } from '@/game/themes/types';
-import { voltTextGlow } from '@/game/themes/volt/volt-text-glow';
-import { voltPalette } from '@/game/themes/volt/volt-tokens';
 
 const COUNTER_HEIGHT = 46;
 const COUNTER_TRANSLATE_Y = getCenteredHudTranslateY(COUNTER_HEIGHT);
 
-export function VoltRallyCounter({ hitCount }: RallyCounterRendererProps) {
+export function PrismRallyCounter({ hitCount }: RallyCounterRendererProps) {
   const [displayedHitCount, setDisplayedHitCount] = useState(0);
   const renderedHitCount = useSharedValue(0);
   const opacity = useSharedValue(0);
   const popScale = useSharedValue(1);
-  const voltage = useSharedValue(0.35);
+  const flare = useSharedValue(0.32);
   const updateDisplayedHitCount = useCallback((value: number) => {
     setDisplayedHitCount(value);
   }, []);
@@ -48,17 +51,17 @@ export function VoltRallyCounter({ hitCount }: RallyCounterRendererProps) {
       scheduleOnRN(updateDisplayedHitCount, currentHitCount);
       renderedHitCount.value = currentHitCount;
       opacity.value = withTiming(1, { duration: 70 });
-      voltage.value = withSequence(
-        withTiming(1, { duration: 45 }),
-        withTiming(0.35, { duration: 180 }),
+      flare.value = withSequence(
+        withTiming(1, { duration: 60 }),
+        withTiming(0.32, { duration: 220 }),
       );
-      popScale.value = 0.82;
+      popScale.value = 0.86;
       popScale.value = withSequence(
-        withSpring(isRallyMilestone(currentHitCount) ? 1.55 : 1.22, {
-          damping: 9,
-          stiffness: 360,
+        withSpring(isRallyMilestone(currentHitCount) ? 1.48 : 1.2, {
+          damping: 10,
+          stiffness: 340,
         }),
-        withSpring(1, { damping: 13, stiffness: 270 }),
+        withSpring(1, { damping: 13, stiffness: 260 }),
       );
     },
   );
@@ -73,17 +76,26 @@ export function VoltRallyCounter({ hitCount }: RallyCounterRendererProps) {
       },
     ],
   }));
-  const railStyle = useAnimatedStyle(() => ({ opacity: voltage.value }));
+  const spectrumStyle = useAnimatedStyle(() => ({ opacity: flare.value }));
 
   return (
     <Animated.View
       pointerEvents="none"
       style={[styles.container, animatedStyle]}
     >
-      <Animated.View style={[styles.rail, railStyle]} />
+      <Animated.View style={[styles.spectrum, spectrumStyle]}>
+        {PRISM_SPECTRUM.map((color) => (
+          <View key={color} style={[styles.spectrumBand, { backgroundColor: color }]} />
+        ))}
+      </Animated.View>
       <View style={styles.copy}>
-        <Text style={styles.caption}>CHARGE</Text>
-        <Text style={[styles.value, voltTextGlow(voltPalette.ball.glow, 7)]}>
+        <Text style={styles.caption}>REFRACTION</Text>
+        <Text
+          style={[
+            styles.value,
+            prismTextGlow(prismPalette.centerLine.glow, 8),
+          ]}
+        >
           {displayedHitCount}×
         </Text>
       </View>
@@ -96,33 +108,33 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: 12,
-    width: 64,
+    width: 78,
     height: COUNTER_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  rail: {
-    width: 2,
-    height: 34,
-    backgroundColor: voltPalette.centerLine.glow,
-    shadowColor: voltPalette.centerLine.glow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
+  spectrum: {
+    width: 4,
+    height: 36,
+    overflow: 'hidden',
+    borderRadius: 2,
+  },
+  spectrumBand: {
+    flex: 1,
   },
   copy: {
     marginLeft: 7,
     alignItems: 'flex-start',
   },
   caption: {
-    color: voltPalette.centerLine.glow,
-    fontSize: 6,
+    color: prismPalette.centerLine.glow,
+    fontSize: 5.5,
     fontWeight: '900',
-    letterSpacing: 1.3,
-    opacity: 0.6,
+    letterSpacing: 1.1,
+    opacity: 0.72,
   },
   value: {
-    color: voltPalette.ball.core,
+    color: prismPalette.ball.core,
     fontSize: 20,
     fontVariant: ['tabular-nums'],
     fontWeight: '900',

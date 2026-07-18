@@ -15,11 +15,12 @@ import {
   isRallyMilestone,
   RALLY_COUNTER_VISIBLE_FROM,
 } from '@/game/engine/rally';
+import { getCenteredHudTranslateY } from '@/game/presentation/hud-layout';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import type { RallyCounterRendererProps } from '@/game/themes/types';
 
 const COUNTER_SIZE = 44;
-const CENTER_LINE_CLEARANCE = 82;
+const COUNTER_TRANSLATE_Y = getCenteredHudTranslateY(COUNTER_SIZE);
 
 export function NeonRallyCounter({ hitCount }: RallyCounterRendererProps) {
   const { effects, palette } = useGameTheme();
@@ -63,7 +64,7 @@ export function NeonRallyCounter({ hitCount }: RallyCounterRendererProps) {
     return {
       opacity: opacity.value,
       transform: [
-        { translateY: -CENTER_LINE_CLEARANCE },
+        { translateY: COUNTER_TRANSLATE_Y },
         { scale: baseScale * popScale.value },
       ],
     };

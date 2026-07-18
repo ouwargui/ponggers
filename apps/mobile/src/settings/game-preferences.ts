@@ -1,3 +1,5 @@
+import { GAME_THEME_IDS, type GameThemeId } from '@/game/themes/theme-ids';
+
 export const EFFECT_LEVELS = ['off', 'subtle', 'full'] as const;
 
 export type EffectLevel = (typeof EFFECT_LEVELS)[number];
@@ -77,5 +79,3 @@ export function getNextOption<T extends string>(
 export function formatPreferenceValue(value: string): string {
   return value.toUpperCase();
 }
-
-import { GAME_THEME_IDS, type GameThemeId } from '@/game/themes/theme-ids';

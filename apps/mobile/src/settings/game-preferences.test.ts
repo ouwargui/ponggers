@@ -32,6 +32,9 @@ describe('parseGamePreferences', () => {
     expect(
       parseGamePreferences(JSON.stringify({ themeId: 'missing' })).themeId,
     ).toBe('neon');
+    expect(
+      parseGamePreferences(JSON.stringify({ themeId: 'prism' })).themeId,
+    ).toBe('prism');
   });
 });
 
