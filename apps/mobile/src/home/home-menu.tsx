@@ -12,6 +12,7 @@ export function HomeMenu() {
         href="/game/local"
         label="LOCAL MATCH"
         accessibilityHint="Starts a match for two players sharing this device"
+        replace
       />
       <GameMenuButton
         href="/online"

@@ -27,6 +27,7 @@ type GameMenuButtonProps = {
   href?: Href;
   label: string;
   onPress?: () => void;
+  replace?: boolean;
 };
 
 function playSelectionHaptic(level: EffectLevel) {
@@ -40,6 +41,7 @@ export function GameMenuButton({
   href,
   label,
   onPress,
+  replace = false,
 }: GameMenuButtonProps) {
   const { palette } = useGameTheme();
   const { preferences } = useGamePreferences();
@@ -77,7 +79,7 @@ export function GameMenuButton({
   );
 
   return href ? (
-    <Link href={href} replace asChild>
+    <Link href={href} replace={replace} asChild>
       {button}
     </Link>
   ) : (
@@ -107,24 +109,6 @@ function GameMenuArena() {
       <Canvas style={styles.canvas}>
         <Arena canvasSize={canvasSize} />
       </Canvas>
-    </View>
-  );
-}
-
-export function GameMenuTitle({ children }: PropsWithChildren) {
-  const { palette } = useGameTheme();
-
-  return (
-    <View style={styles.titleContainer}>
-      <Text
-        style={[
-          styles.title,
-          { color: palette.players.bottom.glow },
-          neonTextGlow(palette.players.bottom.glow, 8),
-        ]}
-      >
-        {children}
-      </Text>
     </View>
   );
 }
@@ -171,16 +155,6 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     alignSelf: 'center',
     gap: 14,
-  },
-  titleContainer: {
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  title: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 7,
   },
   button: {
     minHeight: 58,

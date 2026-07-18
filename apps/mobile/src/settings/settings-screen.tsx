@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -11,7 +10,7 @@ import Animated, {
 
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
-import { GameMenu, GameMenuButton, GameMenuTitle } from '@/menu/game-menu';
+import { GameMenu, GameMenuButton } from '@/menu/game-menu';
 import {
   EFFECT_LEVEL_MULTIPLIER,
   EFFECT_LEVELS,
@@ -117,7 +116,6 @@ function playHapticPreview(level: EffectLevel) {
 }
 
 export function SettingsScreen() {
-  const router = useRouter();
   const { preferences, resetPreferences, setPreference } = useGamePreferences();
   const cycleEffect = useCallback(
     (key: 'haptics' | 'screenShake' | 'trails') => {
@@ -130,13 +128,8 @@ export function SettingsScreen() {
     },
     [preferences, setPreference],
   );
-  const finish = useCallback(() => {
-    router.replace('/');
-  }, [router]);
-
   return (
     <GameMenu>
-      <GameMenuTitle>SETTINGS</GameMenuTitle>
       <View style={styles.preferences}>
         <PreferenceRow
           accessibilityHint="Cycles haptic feedback between off, subtle, and full"
@@ -166,11 +159,6 @@ export function SettingsScreen() {
           accessibilityHint="Restores all game preferences to their defaults"
           label="RESET DEFAULTS"
           onPress={resetPreferences}
-        />
-        <GameMenuButton
-          accessibilityHint="Saves settings and returns to the main menu"
-          label="DONE"
-          onPress={finish}
         />
       </View>
     </GameMenu>

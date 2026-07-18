@@ -57,14 +57,9 @@ function AppContent() {
           headerShown: false,
         }}
       >
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(menu)" options={{ animation: 'none' }} />
         <Stack.Screen name="development/environment" />
-        <Stack.Screen name="achievements" />
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="solo" />
-        <Stack.Screen name="online" />
-        <Stack.Screen name="game/local" />
-        <Stack.Screen name="game/solo" />
+        <Stack.Screen name="game" />
       </Stack>
 
       {__DEV__ && activeLab ? (

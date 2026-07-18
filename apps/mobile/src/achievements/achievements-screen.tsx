@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
@@ -11,7 +10,7 @@ import { useAchievementProgress } from '@/achievements/use-achievement-progress'
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
 import { getThemeReward } from '@/game/themes/theme-rewards';
-import { GameMenu, GameMenuButton, GameMenuTitle } from '@/menu/game-menu';
+import { GameMenu } from '@/menu/game-menu';
 
 type AchievementCardProps = {
   achievement: AchievementDefinition;
@@ -168,7 +167,6 @@ function AchievementCard({
 }
 
 export function AchievementsScreen() {
-  const router = useRouter();
   const { palette } = useGameTheme();
   const { achievementProgress, statistics } = useAchievementProgress();
   const orderedAchievements = orderAchievementsByProgress(achievementProgress);
@@ -190,8 +188,6 @@ export function AchievementsScreen() {
 
   return (
     <GameMenu>
-      <GameMenuTitle>ACHIEVEMENTS</GameMenuTitle>
-
       <View
         accessible
         accessibilityLabel={`${completedCount} of ${ACHIEVEMENTS.length} achievements completed. ${earnedPoints} of ${totalPoints} points earned.`}
@@ -253,14 +249,6 @@ export function AchievementsScreen() {
             rawCurrent={achievement.progress.current(statistics)}
           />
         ))}
-      </View>
-
-      <View style={styles.done}>
-        <GameMenuButton
-          accessibilityHint="Returns to the main menu"
-          label="DONE"
-          onPress={() => router.replace('/')}
-        />
       </View>
     </GameMenu>
   );
@@ -402,8 +390,5 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 2,
-  },
-  done: {
-    marginTop: 10,
   },
 });

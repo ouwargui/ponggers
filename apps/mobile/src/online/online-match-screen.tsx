@@ -1,5 +1,6 @@
 import { normalizeRoomCode } from '@ponggers/signaling-protocol';
 import { useRouter } from 'expo-router';
+import Stack from 'expo-router/stack';
 import { useCallback, useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -107,66 +108,69 @@ export function OnlineMatchScreen() {
 
   const quit = useCallback(() => {
     connection?.close();
-    router.replace('/');
+    router.dismissTo('/');
   }, [connection, router]);
 
   if (hasConnected && connection && role) {
     return (
-      <View style={styles.gameContainer}>
-        <GameScreen
-          session={
-            role === 'host'
-              ? ONLINE_MULTIPLAYER_HOST_SESSION
-              : ONLINE_MULTIPLAYER_GUEST_SESSION
-          }
-          transport={connection.peer.transport}
-          onQuit={quit}
-        />
-        {snapshot.state === 'reconnecting' || snapshot.state === 'failed' ? (
-          <View
-            accessibilityLiveRegion="assertive"
-            style={[
-              styles.connectionOverlay,
-              { backgroundColor: `${palette.arena}E8` },
-            ]}
-          >
-            <Text
+      <>
+        <Stack.Screen options={{ gestureEnabled: false, headerShown: false }} />
+        <View style={styles.gameContainer}>
+          <GameScreen
+            session={
+              role === 'host'
+                ? ONLINE_MULTIPLAYER_HOST_SESSION
+                : ONLINE_MULTIPLAYER_GUEST_SESSION
+            }
+            transport={connection.peer.transport}
+            onQuit={quit}
+          />
+          {snapshot.state === 'reconnecting' || snapshot.state === 'failed' ? (
+            <View
+              accessibilityLiveRegion="assertive"
               style={[
-                styles.connectionOverlayTitle,
-                { color: palette.ball.core },
+                styles.connectionOverlay,
+                { backgroundColor: `${palette.arena}E8` },
               ]}
             >
-              {snapshot.state === 'reconnecting'
-                ? 'RECONNECTING'
-                : 'CONNECTION LOST'}
-            </Text>
-            <Text
-              style={[
-                styles.connectionOverlayMessage,
-                { color: `${palette.ball.core}AA` },
-              ]}
-            >
-              {snapshot.state === 'reconnecting'
-                ? 'Trying to restore the peer-to-peer match…'
-                : snapshot.error}
-            </Text>
-            {snapshot.state === 'failed' ? (
-              <>
-                <LobbyButton
-                  color={palette.players.bottom.glow}
-                  label="NEW MATCH"
-                  onPress={resetLobby}
-                />
-                <LobbyButton
-                  color={palette.ball.core}
-                  label="HOME"
-                  onPress={quit}
-                />
-              </>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
+              <Text
+                style={[
+                  styles.connectionOverlayTitle,
+                  { color: palette.ball.core },
+                ]}
+              >
+                {snapshot.state === 'reconnecting'
+                  ? 'RECONNECTING'
+                  : 'CONNECTION LOST'}
+              </Text>
+              <Text
+                style={[
+                  styles.connectionOverlayMessage,
+                  { color: `${palette.ball.core}AA` },
+                ]}
+              >
+                {snapshot.state === 'reconnecting'
+                  ? 'Trying to restore the peer-to-peer match…'
+                  : snapshot.error}
+              </Text>
+              {snapshot.state === 'failed' ? (
+                <>
+                  <LobbyButton
+                    color={palette.players.bottom.glow}
+                    label="NEW MATCH"
+                    onPress={resetLobby}
+                  />
+                  <LobbyButton
+                    color={palette.ball.core}
+                    label="HOME"
+                    onPress={quit}
+                  />
+                </>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      </>
     );
   }
 
@@ -178,118 +182,114 @@ export function OnlineMatchScreen() {
     snapshot.state !== 'closed';
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={[styles.screen, { backgroundColor: palette.arena }]}
-    >
-      <View
-        pointerEvents="none"
-        style={[
-          styles.topArena,
-          { backgroundColor: `${palette.players.top.glow}0D` },
-        ]}
+    <>
+      <Stack.Screen
+        options={{
+          gestureEnabled: true,
+          headerShown: true,
+          title: mode === 'join' ? 'JOIN ROOM' : 'ONLINE MATCH',
+        }}
       />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bottomArena,
-          { backgroundColor: `${palette.players.bottom.glow}0D` },
-        ]}
-      />
-
-      <View
-        style={[
-          styles.content,
-          {
-            paddingTop: insets.top + 32,
-            paddingBottom: insets.bottom + 32,
-          },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={[styles.screen, { backgroundColor: palette.arena }]}
       >
-        <Text style={[styles.eyebrow, { color: accent }]}>ONLINE</Text>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.topArena,
+            { backgroundColor: `${palette.players.top.glow}0D` },
+          ]}
+        />
+        <View
+          pointerEvents="none"
+          style={[
+            styles.bottomArena,
+            { backgroundColor: `${palette.players.bottom.glow}0D` },
+          ]}
+        />
 
-        {isConnecting ? (
-          <ConnectionStatus
-            accent={accent}
-            onCancel={resetLobby}
-            snapshot={snapshot}
-            textColor={palette.ball.core}
-          />
-        ) : snapshot.state === 'failed' ? (
-          <>
-            <Text style={[styles.title, { color: palette.ball.core }]}>
-              OFFLINE
-            </Text>
-            <Text style={[styles.error, { color: palette.players.top.core }]}>
-              {snapshot.error}
-            </Text>
-            <LobbyButton
-              color={accent}
-              label="TRY AGAIN"
-              onPress={resetLobby}
+        <View
+          style={[
+            styles.content,
+            {
+              paddingTop: 32,
+              paddingBottom: insets.bottom + 32,
+            },
+          ]}
+        >
+          {isConnecting ? (
+            <ConnectionStatus
+              accent={accent}
+              onCancel={resetLobby}
+              snapshot={snapshot}
+              textColor={palette.ball.core}
             />
-            <LobbyButton
-              color={palette.ball.core}
-              label="HOME"
-              onPress={quit}
-            />
-          </>
-        ) : mode === 'join' ? (
-          <>
-            <Text style={[styles.title, { color: palette.ball.core }]}>
-              JOIN
-            </Text>
-            <TextInput
-              accessibilityLabel="Room code"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={6}
-              onChangeText={(value) => setRoomCode(normalizeRoomCode(value))}
-              placeholder="CODE"
-              placeholderTextColor={`${palette.ball.core}33`}
-              selectionColor={accent}
-              style={[
-                styles.codeInput,
-                { borderColor: `${accent}66`, color: palette.ball.core },
-              ]}
-              value={roomCode}
-            />
-            <LobbyButton
-              color={accent}
-              disabled={normalizedCode.length !== 6}
-              label="JOIN MATCH"
-              onPress={() => startConnection('guest', normalizedCode)}
-            />
-            <LobbyButton
-              color={palette.ball.core}
-              label="BACK"
-              onPress={() => setMode('menu')}
-            />
-          </>
-        ) : (
-          <>
-            <Text style={[styles.title, { color: palette.ball.core }]}>
-              MATCH
-            </Text>
-            <LobbyButton
-              color={accent}
-              label="CREATE ROOM"
-              onPress={() => startConnection('host')}
-            />
-            <LobbyButton
-              color={palette.ball.core}
-              label="JOIN ROOM"
-              onPress={() => setMode('join')}
-            />
-            <LobbyButton
-              color={palette.ball.core}
-              label="BACK"
-              onPress={quit}
-            />
-          </>
-        )}
-      </View>
-    </KeyboardAvoidingView>
+          ) : snapshot.state === 'failed' ? (
+            <>
+              <Text style={[styles.title, { color: palette.ball.core }]}>
+                OFFLINE
+              </Text>
+              <Text style={[styles.error, { color: palette.players.top.core }]}>
+                {snapshot.error}
+              </Text>
+              <LobbyButton
+                color={accent}
+                label="TRY AGAIN"
+                onPress={resetLobby}
+              />
+              <LobbyButton
+                color={palette.ball.core}
+                label="HOME"
+                onPress={quit}
+              />
+            </>
+          ) : mode === 'join' ? (
+            <>
+              <TextInput
+                accessibilityLabel="Room code"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={6}
+                onChangeText={(value) => setRoomCode(normalizeRoomCode(value))}
+                placeholder="CODE"
+                placeholderTextColor={`${palette.ball.core}33`}
+                selectionColor={accent}
+                style={[
+                  styles.codeInput,
+                  { borderColor: `${accent}66`, color: palette.ball.core },
+                ]}
+                value={roomCode}
+              />
+              <LobbyButton
+                color={accent}
+                disabled={normalizedCode.length !== 6}
+                label="JOIN MATCH"
+                onPress={() => startConnection('guest', normalizedCode)}
+              />
+              <LobbyButton
+                color={palette.ball.core}
+                label="BACK"
+                onPress={() => setMode('menu')}
+              />
+            </>
+          ) : (
+            <>
+              <LobbyButton
+                color={accent}
+                label="CREATE ROOM"
+                onPress={() => startConnection('host')}
+              />
+              <LobbyButton
+                color={palette.ball.core}
+                label="JOIN ROOM"
+                onPress={() => setMode('join')}
+              />
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -430,11 +430,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 18,
     paddingHorizontal: 28,
-  },
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 7,
   },
   title: {
     marginBottom: 22,
