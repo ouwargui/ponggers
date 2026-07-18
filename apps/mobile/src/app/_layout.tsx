@@ -1,7 +1,11 @@
 import { useRouter } from 'expo-router';
+import {
+  DarkTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from 'expo-router/react-navigation';
 import Stack from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -13,7 +17,10 @@ import {
   useGameDevMenu,
 } from '@/game/debug/use-game-dev-menu';
 import type { OnlineSessionRole } from '@/game/session/definition';
-import { GameThemeProvider } from '@/game/themes/game-theme-provider';
+import {
+  GameThemeProvider,
+  useGameTheme,
+} from '@/game/themes/game-theme-provider';
 import { defaultGameTheme } from '@/game/themes/theme-registry';
 import {
   GamePreferencesProvider,
@@ -22,8 +29,24 @@ import {
 
 function AppContent() {
   const router = useRouter();
+  const { palette } = useGameTheme();
   const { clearPreferencesStorage } = useGamePreferences();
   const [activeLab, setActiveLab] = useState<GameDevLab | null>(null);
+  const navigationTheme = useMemo(
+    () => ({
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: palette.arena,
+        border: 'transparent',
+        card: palette.arena,
+        notification: palette.players.top.glow,
+        primary: palette.players.bottom.glow,
+        text: palette.ball.core,
+      },
+    }),
+    [palette],
+  );
   const openEnvironment = useCallback(() => {
     router.replace('/development/environment');
   }, [router]);
@@ -47,12 +70,12 @@ function AppContent() {
   });
 
   return (
-    <GameThemeProvider theme={defaultGameTheme}>
+    <NavigationThemeProvider value={navigationTheme}>
       <StatusBar hidden />
       <Stack
         screenOptions={{
           animation: 'fade',
-          contentStyle: styles.screen,
+          contentStyle: { backgroundColor: palette.arena },
           gestureEnabled: false,
           headerShown: false,
         }}
@@ -71,13 +94,17 @@ function AppContent() {
           )}
         </View>
       ) : null}
-    </GameThemeProvider>
+    </NavigationThemeProvider>
   );
 }
 
-export default function RootLayout() {
+function ThemedRootLayout() {
+  const { palette } = useGameTheme();
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView
+      style={[styles.root, { backgroundColor: palette.arena }]}
+    >
       <GamePreferencesProvider>
         <GameCenterProvider>
           <AppContent />
@@ -87,9 +114,17 @@ export default function RootLayout() {
   );
 }
 
+export default function RootLayout() {
+  return (
+    <GameThemeProvider theme={defaultGameTheme}>
+      <ThemedRootLayout />
+    </GameThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: defaultGameTheme.palette.arena,
+  root: {
+    flex: 1,
   },
   debugLab: {
     position: 'absolute',
