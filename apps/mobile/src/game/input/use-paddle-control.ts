@@ -72,14 +72,17 @@ export function usePaddleControl(
 ): PanGesture {
   const inputSequence = useSharedValue(0);
   const lastSentTick = useSharedValue(-PADDLE_INPUT_SEND_INTERVAL_TICKS);
+  const previousTouchX = useSharedValue(0);
 
   return usePanGesture({
     enabled,
     minDistance: 0,
     shouldCancelWhenOutside: false,
     simultaneousWith,
-    onBegin: () => {
+    onBegin: (event) => {
       'worklet';
+
+      previousTouchX.value = event.absoluteX;
 
       if (interactionActive) {
         interactionActive.value = true;
@@ -89,13 +92,16 @@ export function usePaddleControl(
       'worklet';
 
       const width = canvasSize.value.width;
+      const changeX = event.absoluteX - previousTouchX.value;
 
-      if (width <= 0) {
+      previousTouchX.value = event.absoluteX;
+
+      if (width <= 0 || !Number.isFinite(changeX)) {
         return;
       }
 
       const currentPaddle = paddle.value;
-      const nextX = currentPaddle.centerX + event.changeX / width;
+      const nextX = currentPaddle.centerX + changeX / width;
       const nextSequence = inputSequence.value + 1;
       const input = createPaddleInput({
         playerId: currentPaddle.id,
@@ -122,6 +128,8 @@ export function usePaddleControl(
     },
     onFinalize: () => {
       'worklet';
+
+      previousTouchX.value = 0;
 
       if (interactionActive) {
         interactionActive.value = false;
