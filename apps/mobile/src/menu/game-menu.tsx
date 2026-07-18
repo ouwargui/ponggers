@@ -1,24 +1,12 @@
-import { Canvas } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 import { type Href, Link } from 'expo-router';
-import { type PropsWithChildren, useCallback } from 'react';
-import {
-  type LayoutChangeEvent,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import Animated, {
-  FadeIn,
-  ReduceMotion,
-  useSharedValue,
-} from 'react-native-reanimated';
+import type { PropsWithChildren } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
-import type { CanvasSize } from '@/game/rendering/types';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
+import { ThemedArenaBackground } from '@/menu/themed-arena-background';
 import type { EffectLevel } from '@/settings/game-preferences';
 import { useGamePreferences } from '@/settings/game-preferences-provider';
 
@@ -87,38 +75,12 @@ export function GameMenuButton({
   );
 }
 
-function GameMenuArena() {
-  const { renderers } = useGameTheme();
-  const { Arena } = renderers;
-  const canvasSize = useSharedValue<CanvasSize>({ width: 0, height: 0 });
-  const handleLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      const { width, height } = event.nativeEvent.layout;
-
-      canvasSize.value = { width, height };
-    },
-    [canvasSize],
-  );
-
-  return (
-    <View
-      pointerEvents="none"
-      style={StyleSheet.absoluteFill}
-      onLayout={handleLayout}
-    >
-      <Canvas style={styles.canvas}>
-        <Arena canvasSize={canvasSize} />
-      </Canvas>
-    </View>
-  );
-}
-
 export function GameMenu({ children }: PropsWithChildren) {
   const { palette } = useGameTheme();
 
   return (
     <View style={[styles.screen, { backgroundColor: palette.arena }]}>
-      <GameMenuArena />
+      <ThemedArenaBackground />
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -139,9 +101,6 @@ export function GameMenu({ children }: PropsWithChildren) {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
-  },
-  canvas: {
     flex: 1,
   },
   scrollContent: {

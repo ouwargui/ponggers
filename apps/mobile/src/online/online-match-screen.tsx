@@ -27,6 +27,7 @@ import { OnlineMatchConnection } from '@/game/session/online-match-connection';
 import { getSignalingServerUrl } from '@/game/session/signaling-server-url';
 import { useGameTheme } from '@/game/themes/game-theme-provider';
 import { neonTextGlow } from '@/game/themes/neon/neon-text-glow';
+import { ThemedArenaBackground } from '@/menu/themed-arena-background';
 
 type LobbyMode = 'menu' | 'join';
 
@@ -194,20 +195,7 @@ export function OnlineMatchScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={[styles.screen, { backgroundColor: palette.arena }]}
       >
-        <View
-          pointerEvents="none"
-          style={[
-            styles.topArena,
-            { backgroundColor: `${palette.players.top.glow}0D` },
-          ]}
-        />
-        <View
-          pointerEvents="none"
-          style={[
-            styles.bottomArena,
-            { backgroundColor: `${palette.players.bottom.glow}0D` },
-          ]}
-        />
+        <ThemedArenaBackground />
 
         <View
           style={[
@@ -409,20 +397,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     lineHeight: 21,
-  },
-  topArena: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    left: 0,
-    height: '50%',
-  },
-  bottomArena: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    left: 0,
-    height: '50%',
   },
   content: {
     flex: 1,
