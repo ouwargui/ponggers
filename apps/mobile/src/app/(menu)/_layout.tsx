@@ -32,6 +32,7 @@ export default function MenuLayout() {
       <Stack.Screen name="solo" options={{ title: 'DIFFICULTY' }} />
       <Stack.Screen name="online" options={{ title: 'ONLINE MATCH' }} />
       <Stack.Screen name="achievements" options={{ title: 'ACHIEVEMENTS' }} />
+      <Stack.Screen name="leaderboards" options={{ title: 'LEADERBOARDS' }} />
       <Stack.Screen name="themes" options={{ title: 'THEMES' }} />
       <Stack.Screen name="settings" options={{ title: 'SETTINGS' }} />
     </Stack>

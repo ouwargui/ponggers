@@ -8,6 +8,7 @@ import {
   createMatchTrackingState,
   type GameStatistics,
   INITIAL_GAME_STATISTICS,
+  parseGameStatistics,
   recordCompletedPoint,
   type StatisticsSessionContext,
 } from '@/achievements/statistics';
@@ -153,5 +154,82 @@ describe('game statistics', () => {
     expect(impossible.onlineWins).toBe(0);
     expect(online.impossibleAiWins).toBe(0);
     expect(online.onlineWins).toBe(1);
+  });
+
+  test('tracks solo leaderboard statistics independently by difficulty', () => {
+    const easyWin = playPoints(
+      [
+        point(0, 1, 'bottom', 4),
+        point(0, 2, 'bottom', 7),
+        point(0, 3, 'bottom', 3),
+        point(0, 4, 'bottom', 2),
+        point(0, 5, 'bottom', 5),
+      ],
+      { ...SOLO_CONTEXT, aiDifficultyLevel: 'easy' },
+    ).statistics;
+    const mediumLoss = playPoints(
+      [
+        point(1, 0, 'top', 8),
+        point(2, 0, 'top', 12),
+        point(3, 0, 'top', 6),
+        point(4, 0, 'top', 4),
+        point(5, 0, 'top', 3),
+      ],
+      { ...SOLO_CONTEXT, aiDifficultyLevel: 'medium' },
+    ).statistics;
+
+    expect(easyWin.soloByDifficulty.easy).toEqual({
+      matchesPlayed: 1,
+      matchesWon: 1,
+      longestRally: 7,
+    });
+    expect(easyWin.soloByDifficulty.medium).toEqual({
+      matchesPlayed: 0,
+      matchesWon: 0,
+      longestRally: 0,
+    });
+    expect(mediumLoss.soloByDifficulty.medium).toEqual({
+      matchesPlayed: 1,
+      matchesWon: 0,
+      longestRally: 12,
+    });
+  });
+
+  test('migrates legacy statistics without inventing difficulty totals', () => {
+    const parsed = parseGameStatistics({
+      schemaVersion: 1,
+      matchesPlayed: 9,
+      matchesWon: 4,
+      longestRally: 18,
+    });
+
+    expect(parsed.schemaVersion).toBe(2);
+    expect(parsed.matchesPlayed).toBe(9);
+    expect(parsed.matchesWon).toBe(4);
+    expect(parsed.longestRally).toBe(18);
+    expect(parsed.soloByDifficulty).toEqual({
+      easy: { matchesPlayed: 0, matchesWon: 0, longestRally: 0 },
+      medium: { matchesPlayed: 0, matchesWon: 0, longestRally: 0 },
+      hard: { matchesPlayed: 0, matchesWon: 0, longestRally: 0 },
+    });
+  });
+
+  test('sanitizes persisted per-difficulty statistics', () => {
+    const parsed = parseGameStatistics({
+      schemaVersion: 2,
+      soloByDifficulty: {
+        easy: {
+          matchesPlayed: 3.8,
+          matchesWon: -1,
+          longestRally: 14.9,
+        },
+      },
+    });
+
+    expect(parsed.soloByDifficulty.easy).toEqual({
+      matchesPlayed: 3,
+      matchesWon: 0,
+      longestRally: 14,
+    });
   });
 });

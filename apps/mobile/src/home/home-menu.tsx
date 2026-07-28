@@ -1,3 +1,5 @@
+import type { Href } from 'expo-router';
+
 import { GameMenu, GameMenuButton } from '@/menu/game-menu';
 
 export function HomeMenu() {
@@ -18,6 +20,11 @@ export function HomeMenu() {
         href="/online"
         label="ONLINE MATCH"
         accessibilityHint="Create or join an online peer-to-peer match"
+      />
+      <GameMenuButton
+        href={'/leaderboards' as Href}
+        label="LEADERBOARDS"
+        accessibilityHint="View local records and global Game Center rankings"
       />
       <GameMenuButton
         href="/achievements"

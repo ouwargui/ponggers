@@ -9,7 +9,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { GameCenterProvider } from '@/achievements/game-center-provider';
 import { useAchievementProgress } from '@/achievements/use-achievement-progress';
 import { NetworkLab } from '@/game/debug/network-lab';
 import { RtcLab } from '@/game/debug/rtc-lab';
@@ -27,6 +26,7 @@ import {
   getRegisteredGameTheme,
 } from '@/game/themes/theme-registry';
 import { getAvailableGameThemeIds } from '@/game/themes/theme-unlocks';
+import { GameCenterProvider } from '@/game-center/game-center-provider';
 import {
   GamePreferencesProvider,
   useGamePreferences,

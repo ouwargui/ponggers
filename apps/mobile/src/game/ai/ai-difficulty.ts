@@ -5,7 +5,9 @@ export type AiDifficulty = {
   returnToCenterSpeed: number;
 };
 
-export type AiDifficultyLevel = 'easy' | 'medium' | 'hard';
+export const AI_DIFFICULTY_LEVELS = ['easy', 'medium', 'hard'] as const;
+
+export type AiDifficultyLevel = (typeof AI_DIFFICULTY_LEVELS)[number];
 
 export const AI_DIFFICULTIES: Record<AiDifficultyLevel, AiDifficulty> = {
   easy: {

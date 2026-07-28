@@ -1,8 +1,11 @@
 import { type PropsWithChildren, useEffect } from 'react';
 import { AppState } from 'react-native';
 
-import { requestGameCenterSynchronization } from '@/achievements/game-center-client';
-import { subscribeToAchievementProgress } from '@/achievements/progress-storage';
+import {
+  subscribeToAchievementProgress,
+  subscribeToLeaderboardScores,
+} from '@/achievements/progress-storage';
+import { requestGameCenterSynchronization } from '@/game-center/game-center-client';
 
 function synchronize() {
   void requestGameCenterSynchronization().catch((error: unknown) => {
@@ -17,6 +20,7 @@ export function GameCenterProvider({ children }: PropsWithChildren) {
     synchronize();
 
     const unsubscribeProgress = subscribeToAchievementProgress(synchronize);
+    const unsubscribeLeaderboards = subscribeToLeaderboardScores(synchronize);
     const appStateSubscription = AppState.addEventListener(
       'change',
       (nextState) => {
@@ -28,6 +32,7 @@ export function GameCenterProvider({ children }: PropsWithChildren) {
 
     return () => {
       unsubscribeProgress();
+      unsubscribeLeaderboards();
       appStateSubscription.remove();
     };
   }, []);

@@ -11,6 +11,11 @@ struct GameCenterAchievementProgress: Record {
   @Field var percentComplete = 0.0
 }
 
+struct GameCenterLeaderboardScore: Record {
+  @Field var identifier = ""
+  @Field var value = 0
+}
+
 private final class GameCenterAuthentication {
   static let shared = GameCenterAuthentication()
 
@@ -159,6 +164,27 @@ public class GameCenterModule: Module {
       }
     }
 
+    AsyncFunction("reportLeaderboardScores") {
+      (scores: [GameCenterLeaderboardScore], promise: Promise) in
+      guard GKLocalPlayer.local.isAuthenticated else {
+        promise.reject(
+          "ERR_GAME_CENTER_NOT_AUTHENTICATED",
+          "The local Game Center player is not authenticated"
+        )
+        return
+      }
+
+      guard scores.allSatisfy({ !$0.identifier.isEmpty && $0.value >= 0 }) else {
+        promise.reject(
+          "ERR_GAME_CENTER_INVALID_LEADERBOARD_SCORE",
+          "Leaderboard identifiers must be non-empty and scores must be non-negative"
+        )
+        return
+      }
+
+      reportLeaderboardScores(scores, at: 0, promise: promise)
+    }
+
     AsyncFunction("showAchievements") { (promise: Promise) in
       guard GKLocalPlayer.local.isAuthenticated else {
         promise.reject(
@@ -183,5 +209,68 @@ public class GameCenterModule: Module {
       }
     }
     .runOnQueue(.main)
+
+    AsyncFunction("showLeaderboards") { (promise: Promise) in
+      guard GKLocalPlayer.local.isAuthenticated else {
+        promise.reject(
+          "ERR_GAME_CENTER_NOT_AUTHENTICATED",
+          "The local Game Center player is not authenticated"
+        )
+        return
+      }
+
+      guard let presenter = appContext?.utilities?.currentViewController() else {
+        promise.reject(
+          "ERR_GAME_CENTER_PRESENTATION",
+          "No view controller is available to present Game Center"
+        )
+        return
+      }
+
+      let dashboard = GKGameCenterViewController(state: .leaderboards)
+      dashboard.gameCenterDelegate = GameCenterDashboardDelegate.shared
+      presenter.present(dashboard, animated: true) {
+        promise.resolve(nil)
+      }
+    }
+    .runOnQueue(.main)
+  }
+
+  private func reportLeaderboardScores(
+    _ scores: [GameCenterLeaderboardScore],
+    at index: Int,
+    promise: Promise
+  ) {
+    guard index < scores.count else {
+      promise.resolve(nil)
+      return
+    }
+
+    let score = scores[index]
+
+    GKLeaderboard.submitScore(
+      score.value,
+      context: 0,
+      player: GKLocalPlayer.local,
+      leaderboardIDs: [score.identifier]
+    ) { [weak self] error in
+      if let error {
+        promise.reject(
+          "ERR_GAME_CENTER_LEADERBOARD_REPORT",
+          error.localizedDescription
+        )
+        return
+      }
+
+      guard let self else {
+        promise.reject(
+          "ERR_GAME_CENTER_LEADERBOARD_REPORT",
+          "The Game Center module was released before reporting completed"
+        )
+        return
+      }
+
+      self.reportLeaderboardScores(scores, at: index + 1, promise: promise)
+    }
   }
 }

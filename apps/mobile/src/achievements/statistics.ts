@@ -1,12 +1,21 @@
-import type { AiDifficultyLevel } from '@/game/ai/ai-difficulty';
+import {
+  AI_DIFFICULTY_LEVELS,
+  type AiDifficultyLevel,
+} from '@/game/ai/ai-difficulty';
 import type { PlayerId, PointCompletedEvent } from '@/game/engine/types';
 import type {
   GameMode,
   GameSessionDefinition,
 } from '@/game/session/definition';
 
+export type SoloDifficultyStatistics = {
+  matchesPlayed: number;
+  matchesWon: number;
+  longestRally: number;
+};
+
 export type GameStatistics = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   matchesPlayed: number;
   matchesWon: number;
   pointsScored: number;
@@ -18,6 +27,7 @@ export type GameStatistics = {
   impossibleAiWins: number;
   onlineWins: number;
   reverseSweeps: number;
+  soloByDifficulty: Record<AiDifficultyLevel, SoloDifficultyStatistics>;
 };
 
 export type MatchTrackingState = {
@@ -31,8 +41,24 @@ export type StatisticsSessionContext = {
   aiDifficultyLevel?: AiDifficultyLevel;
 };
 
+function createInitialSoloDifficultyStatistics(): SoloDifficultyStatistics {
+  return {
+    matchesPlayed: 0,
+    matchesWon: 0,
+    longestRally: 0,
+  };
+}
+
+function createInitialSoloStatistics(): GameStatistics['soloByDifficulty'] {
+  return {
+    easy: createInitialSoloDifficultyStatistics(),
+    medium: createInitialSoloDifficultyStatistics(),
+    hard: createInitialSoloDifficultyStatistics(),
+  };
+}
+
 export const INITIAL_GAME_STATISTICS: GameStatistics = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   matchesPlayed: 0,
   matchesWon: 0,
   pointsScored: 0,
@@ -44,7 +70,22 @@ export const INITIAL_GAME_STATISTICS: GameStatistics = {
   impossibleAiWins: 0,
   onlineWins: 0,
   reverseSweeps: 0,
+  soloByDifficulty: createInitialSoloStatistics(),
 };
+
+const COUNTER_KEYS = [
+  'matchesPlayed',
+  'matchesWon',
+  'pointsScored',
+  'pointsConceded',
+  'ralliesPlayed',
+  'totalRallyHits',
+  'longestRally',
+  'flawlessWins',
+  'impossibleAiWins',
+  'onlineWins',
+  'reverseSweeps',
+] as const satisfies readonly (keyof GameStatistics)[];
 
 export function createMatchTrackingState(): MatchTrackingState {
   return {
@@ -82,11 +123,27 @@ export function recordCompletedPoint(
     return { statistics, tracking };
   }
 
-  const nextStatistics = {
+  const difficulty =
+    context.mode === 'solo' ? context.aiDifficultyLevel : undefined;
+  const nextStatistics: GameStatistics = {
     ...statistics,
     ralliesPlayed: statistics.ralliesPlayed + 1,
     totalRallyHits: statistics.totalRallyHits + event.rallyHitCount,
     longestRally: Math.max(statistics.longestRally, event.rallyHitCount),
+    soloByDifficulty: {
+      ...statistics.soloByDifficulty,
+      ...(difficulty
+        ? {
+            [difficulty]: {
+              ...statistics.soloByDifficulty[difficulty],
+              longestRally: Math.max(
+                statistics.soloByDifficulty[difficulty].longestRally,
+                event.rallyHitCount,
+              ),
+            },
+          }
+        : {}),
+    },
   };
 
   if (context.localPlayerId === event.scorer) {
@@ -116,6 +173,19 @@ export function recordCompletedPoint(
   const winner = event.match.phase.winner;
   const didTrackedPlayerWin = trackedPlayerWon(winner, context);
   nextStatistics.matchesPlayed += 1;
+
+  if (difficulty) {
+    const difficultyStatistics = nextStatistics.soloByDifficulty[difficulty];
+    nextStatistics.soloByDifficulty = {
+      ...nextStatistics.soloByDifficulty,
+      [difficulty]: {
+        ...difficultyStatistics,
+        matchesPlayed: difficultyStatistics.matchesPlayed + 1,
+        matchesWon:
+          difficultyStatistics.matchesWon + (didTrackedPlayerWin ? 1 : 0),
+      },
+    };
+  }
 
   if (didTrackedPlayerWin) {
     const opponent = opponentOf(winner);
@@ -150,13 +220,12 @@ export function parseGameStatistics(value: unknown): GameStatistics {
   }
 
   const candidate = value as Partial<Record<keyof GameStatistics, unknown>>;
-  const parsed = { ...INITIAL_GAME_STATISTICS };
+  const parsed: GameStatistics = {
+    ...INITIAL_GAME_STATISTICS,
+    soloByDifficulty: createInitialSoloStatistics(),
+  };
 
-  for (const key of Object.keys(parsed) as (keyof GameStatistics)[]) {
-    if (key === 'schemaVersion') {
-      continue;
-    }
-
+  for (const key of COUNTER_KEYS) {
     const storedValue = candidate[key];
     if (
       typeof storedValue === 'number' &&
@@ -164,6 +233,46 @@ export function parseGameStatistics(value: unknown): GameStatistics {
       storedValue >= 0
     ) {
       parsed[key] = Math.floor(storedValue) as never;
+    }
+  }
+
+  if (
+    candidate.soloByDifficulty &&
+    typeof candidate.soloByDifficulty === 'object'
+  ) {
+    const storedDifficulties = candidate.soloByDifficulty as Partial<
+      Record<AiDifficultyLevel, unknown>
+    >;
+
+    for (const difficulty of AI_DIFFICULTY_LEVELS) {
+      const storedDifficulty = storedDifficulties[difficulty];
+
+      if (!storedDifficulty || typeof storedDifficulty !== 'object') {
+        continue;
+      }
+
+      const counters = storedDifficulty as Partial<
+        Record<keyof SoloDifficultyStatistics, unknown>
+      >;
+      const next = { ...parsed.soloByDifficulty[difficulty] };
+
+      for (const key of [
+        'matchesPlayed',
+        'matchesWon',
+        'longestRally',
+      ] as const) {
+        const storedValue = counters[key];
+
+        if (
+          typeof storedValue === 'number' &&
+          Number.isFinite(storedValue) &&
+          storedValue >= 0
+        ) {
+          next[key] = Math.floor(storedValue);
+        }
+      }
+
+      parsed.soloByDifficulty[difficulty] = next;
     }
   }
 

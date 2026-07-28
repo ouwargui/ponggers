@@ -8,12 +8,17 @@ import {
   type AchievementId,
   type AchievementProgress,
 } from '@/achievements/definitions';
-import { GAME_CENTER_ENABLED } from '@/achievements/game-center-config';
 import {
   getPendingAchievementProgress,
+  getPendingLeaderboardScores,
   markAchievementProgressReported,
+  markLeaderboardScoresReported,
   mergeReportedAchievementProgress,
 } from '@/achievements/progress-storage';
+import {
+  GAME_CENTER_ACHIEVEMENTS_ENABLED,
+  GAME_CENTER_LEADERBOARDS_ENABLED,
+} from '@/game-center/game-center-config';
 
 const achievementIds = new Set<AchievementId>(ACHIEVEMENTS.map(({ id }) => id));
 
@@ -36,7 +41,11 @@ function toKnownProgress(
 }
 
 async function flushPendingProgress() {
-  if (!PonggersGameCenter || !authenticated) {
+  if (
+    !GAME_CENTER_ACHIEVEMENTS_ENABLED ||
+    !PonggersGameCenter ||
+    !authenticated
+  ) {
     return;
   }
 
@@ -52,8 +61,33 @@ async function flushPendingProgress() {
   }
 }
 
+async function flushPendingLeaderboardScores() {
+  if (
+    !GAME_CENTER_LEADERBOARDS_ENABLED ||
+    !PonggersGameCenter ||
+    !authenticated
+  ) {
+    return;
+  }
+
+  while (true) {
+    const pending = getPendingLeaderboardScores();
+
+    if (pending.length === 0) {
+      return;
+    }
+
+    await PonggersGameCenter.reportLeaderboardScores(pending);
+    markLeaderboardScoresReported(pending);
+  }
+}
+
 async function synchronizeWithGameCenter() {
-  if (!GAME_CENTER_ENABLED || Platform.OS !== 'ios' || !PonggersGameCenter) {
+  if (
+    (!GAME_CENTER_ACHIEVEMENTS_ENABLED && !GAME_CENTER_LEADERBOARDS_ENABLED) ||
+    Platform.OS !== 'ios' ||
+    !PonggersGameCenter
+  ) {
     return;
   }
 
@@ -65,11 +99,14 @@ async function synchronizeWithGameCenter() {
       return;
     }
 
-    const remoteProgress = await PonggersGameCenter.loadAchievements();
-    mergeReportedAchievementProgress(toKnownProgress(remoteProgress));
+    if (GAME_CENTER_ACHIEVEMENTS_ENABLED) {
+      const remoteProgress = await PonggersGameCenter.loadAchievements();
+      mergeReportedAchievementProgress(toKnownProgress(remoteProgress));
+    }
   }
 
   await flushPendingProgress();
+  await flushPendingLeaderboardScores();
 }
 
 export function requestGameCenterSynchronization(): Promise<void> {
@@ -85,13 +122,41 @@ export function requestGameCenterSynchronization(): Promise<void> {
 }
 
 export async function showGameCenterAchievements() {
-  if (!GAME_CENTER_ENABLED) {
-    return;
+  if (!GAME_CENTER_ACHIEVEMENTS_ENABLED) {
+    return false;
   }
 
   await requestGameCenterSynchronization();
 
   if (authenticated && PonggersGameCenter) {
     await PonggersGameCenter.showAchievements();
+    return true;
   }
+
+  return false;
+}
+
+export async function showGameCenterLeaderboards() {
+  if (!GAME_CENTER_LEADERBOARDS_ENABLED) {
+    return false;
+  }
+
+  try {
+    await requestGameCenterSynchronization();
+  } catch (error) {
+    if (!authenticated) {
+      throw error;
+    }
+
+    if (__DEV__) {
+      console.warn('[Game Center] Leaderboard synchronization failed', error);
+    }
+  }
+
+  if (authenticated && PonggersGameCenter) {
+    await PonggersGameCenter.showLeaderboards();
+    return true;
+  }
+
+  return false;
 }

@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   description:
     'Ponggers is a local and multiplayer pong game that you can play with your friends.',
   slug: 'ponggers',
-  version: '1.0.0',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/ponggers.png',
   scheme: appScheme,

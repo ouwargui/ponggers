@@ -69,6 +69,9 @@ including:
 ```text
 EXPO_PUBLIC_SIGNALING_URL=wss://your-production-worker.example/ws
 EXPO_PUBLIC_FORCE_TURN_RELAY=false
+EXPO_PUBLIC_GAME_CENTER_ENABLED=true
+EXPO_PUBLIC_GAME_CENTER_LEADERBOARDS_ENABLED=true
+EXPO_PUBLIC_GAME_CENTER_ACHIEVEMENTS_ENABLED=false
 ```
 
 Before relying on non-interactive CI, complete one successful production iOS

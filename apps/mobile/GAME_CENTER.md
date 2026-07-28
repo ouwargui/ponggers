@@ -1,18 +1,52 @@
-# Ponggers Game Center achievements
+# Ponggers Game Center
 
-## Feature flag
+## Feature flags
 
 Game Center synchronization is fail-closed and disabled by default. Statistics and achievement progress continue to accumulate locally in MMKV while it is disabled.
 
-Enable authentication, reporting, and the Game Center dashboard by setting this public build variable:
+Enable Game Center globally, then enable only the components that already exist in App Store Connect:
 
 ```text
 EXPO_PUBLIC_GAME_CENTER_ENABLED=true
+EXPO_PUBLIC_GAME_CENTER_LEADERBOARDS_ENABLED=true
+EXPO_PUBLIC_GAME_CENTER_ACHIEVEMENTS_ENABLED=false
 ```
 
-Only enable it after the achievements below exist in App Store Connect. Existing local progress will be synchronized the next time the app launches with the flag enabled.
+Leaderboard synchronization is currently active and achievement synchronization is paused. Existing local scores are synchronized the next time the app launches with both the global and leaderboard flags enabled.
 
-Create these achievements in App Store Connect using the exact identifiers below. The identifiers and point values become effectively permanent once an achievement ships.
+## Leaderboards
+
+Create nine classic leaderboards in App Store Connect using the exact identifiers below. Configure every leaderboard as **Best Score**, **High to Low**, and an integer score.
+
+The leaderboards are organized into these sets:
+
+| Set | Identifier | Included leaderboards |
+| --- | --- | --- |
+| Rally | `com.ouwargui.ponggers.leaderboard.rally` | Easy, Medium, and Impossible longest rally |
+| Wins | `com.ouwargui.ponggers.leaderboard.wins` | Easy, Medium, and Impossible wins |
+| Matches | `com.ouwargui.ponggers.leaderboard.matches` | Easy, Medium, and Impossible matches played |
+
+Score submissions use the individual leaderboard identifiers below, not the leaderboard set identifiers.
+
+| Difficulty | Metric | Identifier | Singular suffix | Plural suffix |
+| --- | --- | --- | --- | --- |
+| Easy | Longest Rally | `com.ouwargui.ponggers.leaderboard.rally.easy` | hit | hits |
+| Easy | Most Wins | `com.ouwargui.ponggers.leaderboard.wins.easy` | win | wins |
+| Easy | Matches Played | `com.ouwargui.ponggers.leaderboard.matches.easy` | match | matches |
+| Medium | Longest Rally | `com.ouwargui.ponggers.leaderboard.rally.medium` | hit | hits |
+| Medium | Most Wins | `com.ouwargui.ponggers.leaderboard.wins.medium` | win | wins |
+| Medium | Matches Played | `com.ouwargui.ponggers.leaderboard.matches.medium` | match | matches |
+| Impossible | Longest Rally | `com.ouwargui.ponggers.leaderboard.rally.impossible` | hit | hits |
+| Impossible | Most Wins | `com.ouwargui.ponggers.leaderboard.wins.impossible` | win | wins |
+| Impossible | Matches Played | `com.ouwargui.ponggers.leaderboard.matches.impossible` | match | matches |
+
+Only solo matches contribute to these leaderboards. Scores are stored locally first and reported after Game Center authentication. Failed reports remain pending and retry on the next progress update or app activation.
+
+## Achievements
+
+Achievement synchronization remains disabled until `EXPO_PUBLIC_GAME_CENTER_ACHIEVEMENTS_ENABLED=true`. Local achievements and theme rewards continue to work while it is disabled.
+
+Create these achievements in App Store Connect using the exact identifiers below before enabling synchronization. The identifiers and point values become effectively permanent once an achievement ships.
 
 | Achievement | Identifier | Points | Theme reward | Requirement |
 | --- | --- | ---: | --- | --- |
